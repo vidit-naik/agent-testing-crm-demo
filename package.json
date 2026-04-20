@@ -15,7 +15,7 @@
     "db:use:sqlite": "node scripts/use-db.js sqlite",
     "db:use:postgres": "node scripts/use-db.js postgres",
     "db:setup": "prisma generate && prisma db push && npm run prisma:seed",
-    "deploy": "npm run db:use:postgres && rm -rf .firebase && firebase deploy"
+    "deploy": "npm run db:use:postgres && vercel --prod"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

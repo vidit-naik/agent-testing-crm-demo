@@ -1,59 +1,57 @@
-# Hosting Setup — Agent Testing Fork
+# Hosting Setup — Agent Testing Fork (Vercel)
 
 This is a fork of `crm-demo` intended as a sandboxed deployment for agent testing.
-It is **not** wired to any live Firebase project yet. Follow the steps below to
-stand up your own isolated copy.
+Unlike the original (which ran on Firebase Hosting + Cloud Functions on the Blaze
+plan), this fork targets **Vercel**, whose free tier is sufficient for Next.js SSR.
 
 ## What's already done in this fork
 
 - `package.json` renamed to `crm-demo-agents`.
-- `firebase.json` function name changed to `ssrcrmagents` (so it won't collide
-  with the original `crm-demo-ck-prod` deployment if they ever share a GCP org).
-- `.firebaserc` project id set to the placeholder `REPLACE_WITH_FIREBASE_PROJECT_ID`
-  (the bootstrap script will rewrite this).
-- Fresh git history (`git log` shows a single "initial fork" commit).
-- `scripts/bootstrap-hosting.sh` — one-shot provisioning script.
+- All Firebase-specific files removed (`firebase.json`, `.firebaserc`,
+  `apphosting.yaml`, old `DEPLOYMENT.md`).
+- `package.json` `deploy` script rewritten to call `vercel --prod`.
+- Fresh git history.
+- `scripts/bootstrap-vercel.sh` — one-shot provisioning script.
 
-## What you still need to do manually (can't be automated)
+## Prereqs (manual, can't be automated)
 
-1. **Create a Supabase project** at https://supabase.com
-   - Grab the pooled connection string (port 6543, includes `?pgbouncer=true`) — this
-     is `POSTGRES_URL`.
-   - Grab the direct connection string (port 5432) — this is `POSTGRES_DIRECT_URL`.
+1. **Create a Supabase project** at https://supabase.com (free tier).
+   From **Project Settings → Database → Connection string**, grab:
+   - **Pooled** (port 6543, transaction mode, includes `?pgbouncer=true`) → this is `POSTGRES_URL`
+   - **Direct** (port 5432) → this is `POSTGRES_DIRECT_URL`
 
-2. **Create a Firebase project** at https://console.firebase.google.com
-   - Upgrade it to the **Blaze** plan. Cloud Functions (required for Next.js SSR)
-     will not deploy on Spark.
+   Both need the DB password you set at project creation time.
 
-3. **Auth both CLIs once**:
+2. **Install + auth Vercel CLI**:
    ```bash
-   gcloud auth login
-   firebase login
+   npm i -g vercel
+   vercel login
    ```
 
-## Then run the bootstrap
+## Run the bootstrap
 
 ```bash
-PROJECT_ID=your-firebase-project-id \
-POSTGRES_URL='postgresql://postgres:PASSWORD@db.xxxx.supabase.co:6543/postgres?pgbouncer=true' \
+POSTGRES_URL='postgresql://postgres.xxxx:PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres?pgbouncer=true' \
 POSTGRES_DIRECT_URL='postgresql://postgres:PASSWORD@db.xxxx.supabase.co:5432/postgres' \
-./scripts/bootstrap-hosting.sh
+./scripts/bootstrap-vercel.sh
 ```
 
 The script will:
 
-1. Write `.firebaserc` with your project id.
-2. Write `.env` with both DB URLs.
-3. Enable Secret Manager, Cloud Functions, Cloud Build, and Cloud Run APIs.
-4. Create `postgres-url` and `postgres-direct-url` secrets in Secret Manager and
-   grant the default compute SA `secretmanager.secretAccessor`.
-5. `npm install`, switch Prisma to Postgres mode, push the schema, and seed demo data.
-6. `firebase deploy --only hosting` — this creates the `ssrcrmagents` Cloud
-   Function and the hosting site in one shot.
+1. Write `.env` with both DB URLs (local use).
+2. `npm install`, switch Prisma to Postgres mode, push the schema, and seed demo data.
+3. `vercel link` — prompts you to pick/create a Vercel project.
+4. `vercel env add` — pushes `POSTGRES_URL` and `POSTGRES_DIRECT_URL` to the
+   production and preview environments.
+5. `vercel --prod` — deploys. Vercel prints the live URL.
 
-When it finishes you should see your site at `https://<PROJECT_ID>.web.app`.
+## Serverless + Prisma note
 
-## Local development (no Firebase / Supabase needed)
+Supabase's pooler (port 6543 with `?pgbouncer=true`) is what makes Prisma safe to
+use from Vercel's serverless functions. If you hit connection-exhaustion errors
+in the logs, append `&connection_limit=1` to `POSTGRES_URL`.
+
+## Local development (no Vercel / Supabase needed)
 
 ```bash
 npm install
@@ -68,11 +66,5 @@ npm run dev             # http://localhost:3000
 npm run deploy
 ```
 
-(Defined in `package.json` — switches Prisma to Postgres, wipes `.firebase/`, and
-runs `firebase deploy`.)
-
-## See also
-
-- `DEPLOYMENT.md` — the original project's full operational runbook. Most of it
-  still applies, but substitute your project id for `crm-demo-ck-prod` and the
-  function name `ssrcrmagents` for `ssrcrmdemockprod`.
+(Switches Prisma to Postgres and runs `vercel --prod`. Or just `git push` — if
+you connect the Vercel project to a GitHub repo, Vercel auto-deploys every push.)
