@@ -100,7 +100,7 @@ interface LocaleContextType {
 const LocaleContext = createContext<LocaleContextType | undefined>(undefined)
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('de')
+  const [locale, setLocaleState] = useState<Locale>('en')
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
