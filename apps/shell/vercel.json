@@ -2,11 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "rewrites": [
-    { "source": "/admin", "destination": "https://crm-admin.vercel.app/" },
-    { "source": "/admin/:path*", "destination": "https://crm-admin.vercel.app/:path*" },
+    { "source": "/admin", "destination": "https://crm-admin-mauve.vercel.app/" },
+    { "source": "/admin/:path*", "destination": "https://crm-admin-mauve.vercel.app/:path*" },
     { "source": "/checkout", "destination": "https://crm-checkout.vercel.app/" },
     { "source": "/checkout/:path*", "destination": "https://crm-checkout.vercel.app/:path*" },
-    { "source": "/legacy", "destination": "https://crm-legacy.vercel.app/" },
-    { "source": "/legacy/:path*", "destination": "https://crm-legacy.vercel.app/:path*" }
+    { "source": "/legacy", "destination": "https://crm-legacy-blond.vercel.app/" },
+    { "source": "/legacy/:path*", "destination": "https://crm-legacy-blond.vercel.app/:path*" }
   ]
 }
