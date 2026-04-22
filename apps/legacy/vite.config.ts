@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import { createVuePlugin as vue2 } from 'vite-plugin-vue2'
+import vue2 from '@vitejs/plugin-vue2'
 import { resolve } from 'path'
 
 export default defineConfig({
