@@ -1,0 +1,27 @@
+{
+  "name": "@crm/seatmap",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/seatmap.js",
+  "module": "./dist/seatmap.js",
+  "types": "./dist/seatmap.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/seatmap.d.ts",
+      "import": "./dist/seatmap.js",
+      "default": "./dist/seatmap.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "lit": "^3.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vite": "^5.4.11"
+  }
+}

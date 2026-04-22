@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "cd ../.. && pnpm --filter @crm/shell build",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile=false",
+  "rewrites": [
+    { "source": "/admin", "destination": "https://crm-admin.vercel.app/" },
+    { "source": "/admin/:path*", "destination": "https://crm-admin.vercel.app/:path*" },
+    { "source": "/checkout", "destination": "https://crm-checkout.vercel.app/" },
+    { "source": "/checkout/:path*", "destination": "https://crm-checkout.vercel.app/:path*" },
+    { "source": "/legacy", "destination": "https://crm-legacy.vercel.app/" },
+    { "source": "/legacy/:path*", "destination": "https://crm-legacy.vercel.app/:path*" }
+  ]
+}

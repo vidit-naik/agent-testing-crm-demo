@@ -1,0 +1,1 @@
+self.__REACT_LOADABLE_MANIFEST='{"app/lab/seatmap/page.tsx -> @crm/seatmap":{"id":8984,"files":["static/chunks/8984.589c4aca03f1be9b.js"]},"components/modals/EditOpportunityModal.tsx -> react-select":{"id":9084,"files":["static/chunks/9084.2d6ec27ac34181d3.js"]}}';
