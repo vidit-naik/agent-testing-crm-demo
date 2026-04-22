@@ -63,9 +63,9 @@ export function CategoryFilter({
       <div className="w-56">
         <label className="block text-sm font-medium mb-1">Category</label>
         <PortalSelect
-          value={value}
-          onChange={(v) => onChange(v)}
-          options={[{ value: '', label: 'All categories' }, ...categories.map((c) => ({ value: c, label: c }))]}
+          value={value || '__all__'}
+          onChange={(v) => onChange(v === '__all__' ? '' : v)}
+          options={[{ value: '__all__', label: 'All categories' }, ...categories.map((c) => ({ value: c, label: c }))]}
           placeholder="All categories"
         />
       </div>
