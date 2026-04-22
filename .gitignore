@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules/
 /.pnp
 .pnp.js
 
@@ -10,7 +11,13 @@
 
 # next.js
 /.next/
+**/.next/
 /out/
+**/out/
+
+# build outputs
+**/dist/
+!apps/seatmap/dist/seatmap.d.ts
 
 # production
 /build
@@ -40,10 +47,10 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+**/lib/generated/prisma
 .instrumented
 
 # Playwright
-node_modules/
 /test-results/
 /playwright-report/
 /blob-report/
