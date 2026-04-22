@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { PageHeader, ScenarioPanel } from '@/components/lab/ScenarioCard'
 
 type Role = 'viewer' | 'editor' | 'admin'
 type User = { id: string; name: string; role: Role }
@@ -25,7 +26,8 @@ export default function CollabNotesPage() {
   const [syncedAt, setSyncedAt] = useState<number | null>(null)
 
   const me = USERS.find((u) => u.id === userId)!
-  const myEffectiveRole: Role = me.role === 'viewer' && grantedEditors.includes(me.id) ? 'editor' : me.role
+  const myEffectiveRole: Role =
+    me.role === 'viewer' && grantedEditors.includes(me.id) ? 'editor' : me.role
 
   const saveNote = () => {
     setSyncedAt(Date.now())
@@ -37,71 +39,122 @@ export default function CollabNotesPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-3xl font-bold">Collaborative notes</h1>
-        <p className="text-muted-foreground">
-          Multi-user RBAC. Admin grants → viewer becomes editor. Verify via <em>context B</em>.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Collaborative notes"
+        subtitle="RBAC verification. Admin grants viewer → editor; test must swap identity to verify the promotion took effect."
+        route="/lab/collab-notes"
+        patterns={['RBAC', 'multi-user', 'identity swap']}
+      />
 
-      <div className="rounded-lg border bg-card p-4 flex gap-3 items-center">
-        <span className="text-sm text-muted-foreground">Acting as:</span>
-        <select
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          className="rounded-md border border-input bg-background px-2 py-1 text-sm"
-        >
-          {USERS.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name}
-            </option>
-          ))}
-        </select>
-        <span className="text-xs text-muted-foreground">
-          effective: <strong>{myEffectiveRole}</strong>
-        </span>
-      </div>
+      <ScenarioPanel
+        story={
+          <>
+            Alice (admin) grants Carol (viewer) edit access to a shared note. Carol should now be
+            able to type. The page lets you simulate both users via the <em>Acting as</em> switcher.
+          </>
+        }
+        steps={[
+          'Act as Alice (admin)',
+          'Grant Carol edit access',
+          'Switch acting user → Carol',
+          'Confirm the textarea is no longer disabled',
+          'Type something, click Save, assert the save timestamp',
+        ]}
+        success={[
+          'Test switches user context at least once within the same spec.',
+          <>
+            After grant, Carol&apos;s effective role resolves to{' '}
+            <code className="font-mono text-xs">editor</code>.
+          </>,
+          'Write succeeds for Carol and is asserted via the save timestamp.',
+        ]}
+        gotcha={
+          <>
+            Single-context healers never swap identity. They see Carol-as-viewer, hit a disabled
+            textarea, and blame the selector. The fix is a context/identity swap, not a selector.
+          </>
+        }
+      />
 
-      {canGrant(me.role) && (
-        <div className="rounded-lg border bg-card p-4">
-          <h3 className="font-semibold text-sm mb-2">Grant editor access</h3>
-          <div className="flex gap-2">
-            {USERS.filter((u) => u.role === 'viewer').map((u) => (
-              <button
-                key={u.id}
-                onClick={() => grant(u.id)}
-                disabled={grantedEditors.includes(u.id)}
-                className="text-sm rounded-md border px-3 py-1.5 hover:bg-accent disabled:opacity-50"
-              >
-                {grantedEditors.includes(u.id) ? `✓ ${u.name} granted` : `Grant ${u.name}`}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="rounded-lg border bg-card p-4">
-        <h3 className="font-semibold text-sm mb-2">Notes</h3>
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          disabled={!canEdit(myEffectiveRole)}
-          placeholder={canEdit(myEffectiveRole) ? 'Type notes here...' : 'Read-only for your role'}
-          rows={6}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-60"
-        />
-        <div className="flex items-center justify-between mt-2">
-          <span className="text-xs text-muted-foreground">
-            {syncedAt ? `Saved at ${new Date(syncedAt).toLocaleTimeString()}` : 'Unsaved'}
-          </span>
-          <button
-            onClick={saveNote}
-            disabled={!canEdit(myEffectiveRole)}
-            className="rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium disabled:opacity-50"
+      <div className="space-y-4">
+        <div className="rounded-lg border bg-card p-4 flex gap-3 items-center flex-wrap">
+          <span className="text-sm font-medium">Acting as:</span>
+          <select
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+            className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+            data-testid="user-switcher"
           >
-            Save
-          </button>
+            {USERS.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
+            ))}
+          </select>
+          <span
+            className="text-xs px-2 py-1 rounded bg-slate-100 text-slate-700 font-mono"
+            data-effective-role={myEffectiveRole}
+          >
+            effective: {myEffectiveRole}
+          </span>
+          {grantedEditors.length > 0 && (
+            <span className="text-xs text-muted-foreground">
+              Granted: {grantedEditors.join(', ')}
+            </span>
+          )}
+        </div>
+
+        {canGrant(me.role) && (
+          <div className="rounded-lg border bg-card p-4">
+            <h3 className="font-semibold text-sm mb-2">Grant editor access</h3>
+            <div className="flex gap-2 flex-wrap">
+              {USERS.filter((u) => u.role === 'viewer').map((u) => (
+                <button
+                  key={u.id}
+                  onClick={() => grant(u.id)}
+                  disabled={grantedEditors.includes(u.id)}
+                  className="text-sm rounded-md border px-3 py-1.5 hover:bg-accent disabled:opacity-50"
+                  data-testid={`grant-${u.id}`}
+                >
+                  {grantedEditors.includes(u.id) ? `✓ ${u.name} granted` : `Grant ${u.name}`}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="rounded-lg border bg-card p-4">
+          <h3 className="font-semibold text-sm mb-2">Deal notes</h3>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            disabled={!canEdit(myEffectiveRole)}
+            placeholder={
+              canEdit(myEffectiveRole)
+                ? 'Type notes here — will sync to all users with access'
+                : 'Read-only for your role'
+            }
+            rows={6}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-60"
+            data-testid="note-input"
+          />
+          <div className="flex items-center justify-between mt-2">
+            <span
+              className="text-xs text-muted-foreground"
+              data-synced-at={syncedAt ?? ''}
+            >
+              {syncedAt ? `Saved at ${new Date(syncedAt).toLocaleTimeString()}` : 'Unsaved'}
+            </span>
+            <button
+              onClick={saveNote}
+              disabled={!canEdit(myEffectiveRole)}
+              className="rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium disabled:opacity-50"
+              data-testid="save-note"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
     </div>
