@@ -1,8 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "cd ../.. && pnpm --filter @crm/shell build",
-  "installCommand": "cd ../.. && pnpm install --frozen-lockfile=false",
   "rewrites": [
     { "source": "/admin", "destination": "https://crm-admin.vercel.app/" },
     { "source": "/admin/:path*", "destination": "https://crm-admin.vercel.app/:path*" },

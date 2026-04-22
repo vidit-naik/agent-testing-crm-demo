@@ -2,8 +2,9 @@
   "name": "@crm/shell",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@9.15.2",
-  "engines": { "node": "20.x" },
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
@@ -23,9 +24,8 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@crm/fake-api": "workspace:*",
-    "@crm/seatmap": "workspace:*",
     "@prisma/client": "^6.18.0",
+    "lit": "^3.2.1",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-select": "^2.1.2",
     "@tiptap/extension-mention": "^2.10.3",

@@ -7,7 +7,7 @@ export default function SeatMapPage() {
   const [total, setTotal] = useState(0)
 
   useEffect(() => {
-    import('@crm/seatmap').catch((e) => console.warn('Seatmap component not built:', e))
+    import('@/components/seatmap/seatmap').catch((e) => console.warn('Seatmap component not built:', e))
   }, [])
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { ecList, ecSet } from '@crm/fake-api'
+import { ecList, ecSet } from '@/lib/fake-api'
 
 const SEED = ['Software', 'Hardware', 'Services', 'Support', 'Training']
 

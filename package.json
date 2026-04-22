@@ -2,25 +2,9 @@
   "name": "crm-demo-agents",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@9.15.2",
   "engines": {
     "node": "20.x"
   },
-  "scripts": {
-    "dev": "pnpm --filter @crm/shell dev",
-    "dev:shell": "pnpm --filter @crm/shell dev",
-    "dev:admin": "pnpm --filter @crm/admin dev",
-    "dev:checkout": "pnpm --filter @crm/checkout dev",
-    "dev:legacy": "pnpm --filter @crm/legacy dev",
-    "dev:seatmap": "pnpm --filter @crm/seatmap dev",
-    "build": "pnpm -r build",
-    "build:shell": "pnpm --filter @crm/shell build",
-    "build:admin": "pnpm --filter @crm/admin build",
-    "build:checkout": "pnpm --filter @crm/checkout build",
-    "build:legacy": "pnpm --filter @crm/legacy build",
-    "build:seatmap": "pnpm --filter @crm/seatmap build"
-  },
-  "devDependencies": {
-    "typescript": "^5.3.3"
-  }
+  "scripts": {},
+  "devDependencies": {}
 }

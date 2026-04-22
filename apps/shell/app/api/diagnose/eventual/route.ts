@@ -1,4 +1,4 @@
-import { ecList, ecSet } from '@crm/fake-api'
+import { ecList, ecSet } from '@/lib/fake-api'
 
 function key(name: string) {
   return `diag-ec:${name}`
