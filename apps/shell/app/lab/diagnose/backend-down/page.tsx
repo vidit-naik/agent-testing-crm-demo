@@ -1,18 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertCircle, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 
 export default function NewDealPage() {
   const [form, setForm] = useState({ title: '', value: '', stage: 'Proposal', account: '' })
-  const [status, setStatus] = useState<'idle' | 'pending' | 'error' | 'saved'>('idle')
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [retryAt, setRetryAt] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
-    setStatus('pending')
-    setErrorMessage(null)
+    setSaving(true)
+    setSaved(false)
     try {
       const res = await fetch('/api/diagnose/backend-down', {
         method: 'POST',
@@ -20,15 +19,14 @@ export default function NewDealPage() {
         body: JSON.stringify(form),
       })
       if (res.ok) {
-        setStatus('saved')
-      } else {
-        setStatus('error')
-        setErrorMessage(`Could not save deal. Our API returned ${res.status}. Support has been notified.`)
-        setRetryAt(Date.now())
+        setSaved(true)
+        setForm({ title: '', value: '', stage: 'Proposal', account: '' })
       }
+      // Non-2xx: silently stop spinner. No UI error. Agent must check network.
     } catch {
-      setStatus('error')
-      setErrorMessage('Network error. Please try again.')
+      // Network error also silent.
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -91,26 +89,7 @@ export default function NewDealPage() {
           </div>
         </div>
 
-        {errorMessage && (
-          <div
-            className="rounded-md border border-rose-200 bg-rose-50 p-3 flex items-start gap-2"
-            role="alert"
-            data-error="true"
-          >
-            <AlertCircle className="h-4 w-4 text-rose-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-rose-900 flex-1">
-              <div className="font-medium">Save failed</div>
-              <p className="text-rose-800">{errorMessage}</p>
-              {retryAt && (
-                <p className="text-xs text-rose-700 mt-1">
-                  Last attempt: {new Date(retryAt).toLocaleTimeString()}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {status === 'saved' && (
+        {saved && (
           <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
             Deal saved.
           </div>
@@ -119,11 +98,11 @@ export default function NewDealPage() {
         <div className="flex gap-2">
           <button
             type="submit"
-            disabled={status === 'pending'}
+            disabled={saving}
             className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium disabled:opacity-50 inline-flex items-center gap-2"
             data-testid="save-deal"
           >
-            {status === 'pending' ? (
+            {saving ? (
               <>
                 <RefreshCw className="h-4 w-4 animate-spin" />
                 Saving...

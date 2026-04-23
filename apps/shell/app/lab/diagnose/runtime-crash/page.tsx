@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react'
 import { Mail, Phone, Building2, User, Calendar, Edit, Trash2 } from 'lucide-react'
 
+type Activity = { date: string; text: string }
+
 export default function ContactProfilePage() {
-  const [crashed, setCrashed] = useState(false)
+  const [activity, setActivity] = useState<Activity[] | null>(null)
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -13,14 +15,13 @@ export default function ContactProfilePage() {
           'Cannot read properties of undefined (reading "id")'
         )
         window.dispatchEvent(new ErrorEvent('error', { error: err, message: err.message }))
-        setCrashed(true)
       } catch {}
     }, 1600)
     return () => clearTimeout(t)
   }, [])
 
   return (
-    <div className="space-y-6 max-w-4xl" data-crashed={crashed}>
+    <div className="space-y-6 max-w-4xl">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div className="flex items-start gap-4">
           <div className="h-16 w-16 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -77,11 +78,15 @@ export default function ContactProfilePage() {
           <ul className="space-y-2 text-sm">
             <li className="flex items-center justify-between border-b pb-2">
               <span className="font-medium">ACME Q3 expansion</span>
-              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">Proposal</span>
+              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                Proposal
+              </span>
             </li>
             <li className="flex items-center justify-between">
               <span className="font-medium">Training add-on</span>
-              <span className="text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">Qualification</span>
+              <span className="text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">
+                Qualification
+              </span>
             </li>
           </ul>
         </div>
@@ -90,22 +95,16 @@ export default function ContactProfilePage() {
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
             Recent activity
           </h3>
-          {crashed ? (
-            <div className="text-sm text-muted-foreground italic">Failed to load activity.</div>
+          {activity === null ? (
+            <div className="text-sm text-muted-foreground">Loading activity...</div>
           ) : (
             <ul className="space-y-2 text-sm">
-              <li className="flex gap-3 pb-2 border-b">
-                <span className="text-xs text-muted-foreground w-20">Apr 19</span>
-                <span>Call logged · 32 min</span>
-              </li>
-              <li className="flex gap-3 pb-2 border-b">
-                <span className="text-xs text-muted-foreground w-20">Apr 15</span>
-                <span>Email sent · &quot;Q3 proposal review&quot;</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="text-xs text-muted-foreground w-20">Apr 12</span>
-                <span>Meeting scheduled for Apr 22</span>
-              </li>
+              {activity.map((a, i) => (
+                <li key={i} className="flex gap-3 pb-2 border-b last:border-0">
+                  <span className="text-xs text-muted-foreground w-20">{a.date}</span>
+                  <span>{a.text}</span>
+                </li>
+              ))}
             </ul>
           )}
         </div>

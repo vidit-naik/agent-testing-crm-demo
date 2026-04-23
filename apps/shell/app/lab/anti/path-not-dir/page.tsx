@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, FolderOpen, AlertCircle } from 'lucide-react'
+import { FileText, FolderOpen } from 'lucide-react'
 
 const FILES = [
   'contract-2024-Q4.pdf',
@@ -14,32 +14,24 @@ const FILES = [
 export default function AttachmentsPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const open = async (name: string) => {
     setSelected(name)
     setLoading(true)
-    setError(null)
     setPreview(null)
     try {
       const res = await fetch(`/api/anti/read-file?path=attachments/${name}`)
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        setError(data.error || 'Could not open file')
-      } else {
+      if (res.ok) {
         const data = await res.json()
-        setPreview(data.snippet || '(empty file)')
+        setPreview(data.snippet || '(empty)')
       }
+      // Non-2xx: leave preview null, stop spinner. No UI error.
     } catch {
-      setError('Network error')
+      // Silent.
     } finally {
       setLoading(false)
     }
-  }
-
-  const retry = () => {
-    if (selected) open(selected)
   }
 
   return (
@@ -72,34 +64,22 @@ export default function AttachmentsPage() {
           </ul>
         </div>
 
-        <div className="rounded-lg border bg-card p-5">
+        <div className="rounded-lg border bg-card p-5 min-h-[200px]">
           {!selected ? (
             <p className="text-sm text-muted-foreground text-center py-12">
               Select a file to preview.
             </p>
           ) : loading ? (
             <p className="text-sm text-muted-foreground">Loading {selected}...</p>
-          ) : error ? (
-            <div className="space-y-3">
-              <div className="rounded-md border border-rose-200 bg-rose-50 p-3 flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-rose-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-rose-900">
-                  <div className="font-medium">Preview failed</div>
-                  <p className="font-mono text-xs mt-1">{error}</p>
-                </div>
-              </div>
-              <button
-                onClick={retry}
-                className="rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium"
-              >
-                Try again
-              </button>
-            </div>
-          ) : (
+          ) : preview ? (
             <div>
               <div className="text-xs text-muted-foreground mb-2">{selected}</div>
               <pre className="rounded-md bg-muted p-3 text-xs overflow-x-auto">{preview}</pre>
             </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-12">
+              Preview unavailable.
+            </p>
           )}
         </div>
       </div>

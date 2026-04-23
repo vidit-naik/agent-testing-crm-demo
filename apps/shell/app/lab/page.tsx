@@ -13,6 +13,9 @@ import {
   Server,
   AlertTriangle,
   Bug,
+  Rocket,
+  Upload,
+  Megaphone,
 } from 'lucide-react'
 
 type Entry = {
@@ -24,6 +27,32 @@ type Entry = {
 }
 
 const SECTIONS: { heading: string; entries: Entry[] }[] = [
+  {
+    heading: 'Multi-step flows',
+    entries: [
+      {
+        href: '/lab/onboarding',
+        title: 'Workspace onboarding',
+        desc: '4-step wizard · workspace → team → integrations → review.',
+        icon: Rocket,
+        tag: '4 pages',
+      },
+      {
+        href: '/lab/import-contacts',
+        title: 'Import contacts',
+        desc: '3-step CSV import · upload → map fields → review.',
+        icon: Upload,
+        tag: '3 pages',
+      },
+      {
+        href: '/lab/campaigns',
+        title: 'Campaign builder',
+        desc: 'List + 4-step create · details → audience → template → schedule.',
+        icon: Megaphone,
+        tag: '5 pages',
+      },
+    ],
+  },
   {
     heading: 'Canvas / inline frameworks',
     entries: [
@@ -176,7 +205,8 @@ export default function LabIndex() {
       <div>
         <h1 className="text-3xl font-bold">Lab</h1>
         <p className="text-muted-foreground">
-          Deliberately hard-to-test surfaces. Each page exercises one or more agent pain points.
+          Feature surfaces for agent testing. Each flow is designed to look like real product
+          functionality.
         </p>
       </div>
 
