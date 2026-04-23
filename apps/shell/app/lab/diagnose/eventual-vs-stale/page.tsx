@@ -1,14 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { PageHeader, ScenarioPanel } from '@/components/lab/ScenarioCard'
+import { Plus, CheckSquare, RefreshCw } from 'lucide-react'
 
-export default function EventualVsStalePage() {
+export default function TaskListPage() {
   const [items, setItems] = useState<string[]>([])
-  const [lastSubmitted, setLastSubmitted] = useState<string | null>(null)
-  const [polling, setPolling] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [creating, setCreating] = useState(false)
   const [broken, setBroken] = useState(false)
-  const [elapsed, setElapsed] = useState(0)
 
   useEffect(() => {
     setBroken(
@@ -27,152 +26,85 @@ export default function EventualVsStalePage() {
     load()
   }, [load])
 
-  const submit = async () => {
-    const name = `Task-${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`
-    setLastSubmitted(name)
-    setPolling(true)
-    setElapsed(0)
-    const start = Date.now()
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const name = newName.trim()
+    if (!name) return
+    setCreating(true)
 
-    await fetch('/api/diagnose/eventual' + (broken ? '?broken=1' : ''), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    })
+    try {
+      await fetch('/api/diagnose/eventual' + (broken ? '?broken=1' : ''), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
 
-    const poll = setInterval(async () => {
-      await load()
-      setElapsed(Math.floor((Date.now() - start) / 100) / 10)
-    }, 400)
-
-    const stop = setTimeout(() => {
-      clearInterval(poll)
-      setPolling(false)
-    }, 10000)
-
-    return () => {
-      clearInterval(poll)
-      clearTimeout(stop)
+      const start = Date.now()
+      const poll = setInterval(async () => {
+        await load()
+        if (Date.now() - start > 8000) {
+          clearInterval(poll)
+          setCreating(false)
+        }
+      }, 400)
+      setNewName('')
+    } catch {
+      setCreating(false)
     }
   }
 
-  const appears = lastSubmitted && items.includes(lastSubmitted)
-
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Eventual vs stale"
-        subtitle='Create a task. It settles in ~2.5s. "broken=1" means it never settles — that&apos;s a real bug.'
-        route="/lab/diagnose/eventual-vs-stale"
-        patterns={['eventual consistency', 'polling', 'bug vs delay']}
-      />
-
-      <ScenarioPanel
-        story={
-          <>
-            A new task is created. The write goes through immediately, but the read API caches for
-            2.5s ± 500ms before the new task appears in the list. In <code className="font-mono text-xs">broken=1</code>{' '}
-            mode the task never appears — that&apos;s a genuine data-loss bug.
-          </>
-        }
-        steps={[
-          'Click "Create task"',
-          'Poll the list via the Refresh button or watch the counter',
-          'In normal mode: task appears within ~2.5s ± 500ms',
-          'In ?broken=1 mode: task never appears → that is a real bug',
-          'Classify correctly before reporting',
-        ]}
-        success={[
-          <>
-            Normal: test uses <code className="font-mono text-xs">expect.poll()</code> up to ~4s and
-            does NOT flag as a bug.
-          </>,
-          <>
-            Broken: test times out, reports <code className="font-mono text-xs">type=&quot;app-bug&quot;</code>{' '}
-            with evidence the write didn&apos;t land.
-          </>,
-          'Test distinguishes the two modes purely from observed timing.',
-        ]}
-        gotcha={
-          <>
-            Agents often treat both modes identically — either by waiting forever on the broken one
-            or by flagging the normal one as broken after ~1s.
-          </>
-        }
-      />
-
-      <div className="rounded-lg border bg-card p-5 space-y-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs font-semibold uppercase tracking-wide">Mode:</span>
-          <span
-            className={`text-xs font-medium px-2 py-1 rounded ${
-              broken ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
-            }`}
-            data-mode={broken ? 'broken' : 'eventual'}
-          >
-            {broken ? 'broken — writes never settle' : 'eventual — settles in ~2.5s'}
-          </span>
-          <a
-            href={broken ? '?' : '?broken=1'}
-            className="text-xs text-primary underline ml-auto"
-          >
-            Switch to {broken ? 'eventual' : 'broken'} mode
-          </a>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={submit}
-            disabled={polling}
-            className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium disabled:opacity-50"
-            data-testid="create-task"
-          >
-            {polling ? 'Polling...' : 'Create task'}
-          </button>
-          <button
-            onClick={load}
-            className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent"
-          >
-            Refresh list
-          </button>
-          {polling && (
-            <span className="text-xs text-muted-foreground font-mono">
-              elapsed {elapsed.toFixed(1)}s
-            </span>
-          )}
-        </div>
-
-        {lastSubmitted && (
-          <div
-            className={`rounded-md border p-3 text-sm ${
-              appears
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-                : 'border-amber-200 bg-amber-50 text-amber-900'
-            }`}
-            data-last-submitted={lastSubmitted}
-            data-appears={appears ? 'true' : 'false'}
-          >
-            Last submitted: <code className="font-mono text-xs">{lastSubmitted}</code> —{' '}
-            <strong>{appears ? 'visible in list' : 'pending'}</strong>
-          </div>
-        )}
-
+    <div className="space-y-4 max-w-2xl">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-            Current items
-          </h4>
-          {items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No items yet.</p>
-          ) : (
-            <ul className="rounded-md border divide-y">
-              {items.map((it) => (
-                <li key={it} data-item={it} className="px-3 py-2 text-sm font-mono">
-                  {it}
-                </li>
-              ))}
-            </ul>
-          )}
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <CheckSquare className="h-7 w-7 text-primary" />
+            Tasks
+          </h1>
+          <p className="text-muted-foreground">Track follow-ups for your accounts.</p>
         </div>
+        <button
+          onClick={load}
+          className="rounded-md border border-input px-3 py-1.5 text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Refresh
+        </button>
+      </div>
+
+      <form onSubmit={submit} className="rounded-lg border bg-card p-4 flex gap-2">
+        <input
+          type="text"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="Add a task..."
+          className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+          data-testid="task-input"
+        />
+        <button
+          type="submit"
+          disabled={creating || !newName.trim()}
+          className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium disabled:opacity-50 inline-flex items-center gap-1.5"
+          data-testid="add-task"
+        >
+          <Plus className="h-4 w-4" />
+          {creating ? 'Adding...' : 'Add'}
+        </button>
+      </form>
+
+      <div className="rounded-lg border bg-card">
+        {items.length === 0 ? (
+          <p className="p-6 text-sm text-muted-foreground text-center">No tasks yet.</p>
+        ) : (
+          <ul className="divide-y">
+            {items.map((t) => (
+              <li key={t} className="px-4 py-2.5 text-sm flex items-center gap-2" data-task={t}>
+                <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                {t}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   )

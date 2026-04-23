@@ -1,85 +1,47 @@
 'use client'
 
 import { useState } from 'react'
-import { PageHeader, ScenarioPanel } from '@/components/lab/ScenarioCard'
+import { AlertCircle, RefreshCw } from 'lucide-react'
 
-export default function BackendDownPage() {
-  const [form, setForm] = useState({ title: '', value: '', stage: 'Proposal' })
+export default function NewDealPage() {
+  const [form, setForm] = useState({ title: '', value: '', stage: 'Proposal', account: '' })
   const [status, setStatus] = useState<'idle' | 'pending' | 'error' | 'saved'>('idle')
-  const [lastStatus, setLastStatus] = useState<number | null>(null)
-  const [reported, setReported] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [retryAt, setRetryAt] = useState<number | null>(null)
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
     setStatus('pending')
+    setErrorMessage(null)
     try {
       const res = await fetch('/api/diagnose/backend-down', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
-      setLastStatus(res.status)
-      setStatus(res.ok ? 'saved' : 'error')
+      if (res.ok) {
+        setStatus('saved')
+      } else {
+        setStatus('error')
+        setErrorMessage(`Could not save deal. Our API returned ${res.status}. Support has been notified.`)
+        setRetryAt(Date.now())
+      }
     } catch {
       setStatus('error')
+      setErrorMessage('Network error. Please try again.')
     }
   }
 
-  const reportBlocker = async () => {
-    await fetch('/api/blocker', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'backend-bug',
-        page: '/lab/diagnose/backend-down',
-        detail: `Backend returns ${lastStatus ?? 504} on every save`,
-      }),
-    })
-    setReported(true)
-  }
-
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Backend down"
-        subtitle="Deal save endpoint always returns 504. Frontend is fine. This is an infra failure disguised as a form bug."
-        route="/lab/diagnose/backend-down"
-        patterns={['infra failure', 'classification', 'blocker report']}
-      />
+    <div className="space-y-4 max-w-xl">
+      <div>
+        <h1 className="text-3xl font-bold">New deal</h1>
+        <p className="text-muted-foreground">Log a new sales opportunity.</p>
+      </div>
 
-      <ScenarioPanel
-        story={
-          <>
-            A rep tries to log a proposal-stage deal for an account. The form submits, but every
-            POST returns <code className="font-mono text-xs">504 Gateway Timeout</code>. The UI
-            renders correctly — the problem is the backend.
-          </>
-        }
-        steps={[
-          'Fill out the form below',
-          'Click "Save deal"',
-          'Observe the 504 error',
-          'Classify the failure as a backend bug',
-          'POST to /api/blocker with type="backend-bug"',
-        ]}
-        success={[
-          'Test recognizes the 504 as infra failure, not test logic.',
-          'Selectors are NOT rewritten in an attempt to "fix" the save.',
-          'Timeout is NOT bumped past the default.',
-          'A single /api/blocker report is filed with classification.',
-        ]}
-        gotcha={
-          <>
-            Agents often re-run with longer timeouts or try different selectors for the Save button.
-            The button works fine. The backend itself is down. Exit fast.
-          </>
-        }
-      />
-
-      <form onSubmit={save} className="rounded-lg border bg-card p-5 space-y-4 max-w-xl">
-        <h3 className="font-semibold">New deal</h3>
+      <form onSubmit={save} className="rounded-lg border bg-card p-6 space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Title</label>
+          <label className="block text-sm font-medium mb-1">Deal title</label>
           <input
             type="text"
             required
@@ -89,6 +51,19 @@ export default function BackendDownPage() {
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           />
         </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Account</label>
+          <input
+            type="text"
+            required
+            value={form.account}
+            onChange={(e) => setForm({ ...form, account: e.target.value })}
+            placeholder="ACME Corp"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium mb-1">Value (USD)</label>
@@ -116,50 +91,55 @@ export default function BackendDownPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        {errorMessage && (
+          <div
+            className="rounded-md border border-rose-200 bg-rose-50 p-3 flex items-start gap-2"
+            role="alert"
+            data-error="true"
+          >
+            <AlertCircle className="h-4 w-4 text-rose-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-rose-900 flex-1">
+              <div className="font-medium">Save failed</div>
+              <p className="text-rose-800">{errorMessage}</p>
+              {retryAt && (
+                <p className="text-xs text-rose-700 mt-1">
+                  Last attempt: {new Date(retryAt).toLocaleTimeString()}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {status === 'saved' && (
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+            Deal saved.
+          </div>
+        )}
+
+        <div className="flex gap-2">
           <button
             type="submit"
             disabled={status === 'pending'}
-            className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium disabled:opacity-50"
+            className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium disabled:opacity-50 inline-flex items-center gap-2"
             data-testid="save-deal"
           >
-            {status === 'pending' ? 'Saving...' : 'Save deal'}
+            {status === 'pending' ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save deal'
+            )}
           </button>
-          {lastStatus !== null && (
-            <span
-              className={`text-sm font-medium ${
-                status === 'error' ? 'text-destructive' : 'text-emerald-700'
-              }`}
-              data-last-status={lastStatus}
-            >
-              HTTP {lastStatus} · {status === 'error' ? 'backend refused' : 'ok'}
-            </span>
-          )}
+          <button
+            type="button"
+            className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-accent"
+          >
+            Cancel
+          </button>
         </div>
       </form>
-
-      {status === 'error' && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 space-y-3 max-w-xl">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-rose-700 mb-1">
-              Infra failure detected
-            </div>
-            <p className="text-sm text-rose-900">
-              <code className="font-mono text-xs">POST /api/diagnose/backend-down → {lastStatus}</code>.
-              This isn&apos;t a test or UI bug. The correct action is to classify and report, not to
-              retry with different selectors.
-            </p>
-          </div>
-          <button
-            onClick={reportBlocker}
-            disabled={reported}
-            className="rounded-md bg-rose-600 text-white px-3 py-1.5 text-sm font-medium disabled:opacity-60"
-            data-testid="blocker-report"
-          >
-            {reported ? '✓ Reported to /api/blocker' : 'Report blocker'}
-          </button>
-        </div>
-      )}
     </div>
   )
 }

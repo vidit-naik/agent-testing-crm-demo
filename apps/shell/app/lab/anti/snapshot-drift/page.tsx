@@ -1,76 +1,63 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { PageHeader, ScenarioPanel } from '@/components/lab/ScenarioCard'
+import { Keyboard, RefreshCw } from 'lucide-react'
 
 function rid() {
-  return 'e' + Math.floor(Math.random() * 1e6)
+  return 'k' + Math.floor(Math.random() * 1e6)
 }
 
-export default function SnapshotDriftPage() {
+const SHORTCUTS = [
+  { label: 'New deal', keys: 'D' },
+  { label: 'New contact', keys: 'C' },
+  { label: 'Search', keys: '/' },
+  { label: 'Go to dashboard', keys: 'G then H' },
+]
+
+export default function ShortcutsPage() {
   const [tick, setTick] = useState(0)
   const [ids, setIds] = useState<string[]>([])
 
   useEffect(() => {
-    setIds([rid(), rid(), rid(), rid()])
+    setIds(SHORTCUTS.map(() => rid()))
   }, [tick])
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Snapshot drift"
-        subtitle="aria-ref IDs rotate on every render. Any cached snapshot ref is stale the moment the page updates."
-        route="/lab/anti/snapshot-drift"
-        patterns={['anti-pattern', 'snapshot freshness', 'stale ref']}
-      />
-
-      <ScenarioPanel
-        story={
-          <>
-            Playwright&apos;s <code className="font-mono text-xs">_snapshotForAI</code> assigns
-            volatile <code className="font-mono text-xs">aria-ref</code> IDs. Re-using one after the
-            tree changes selects the wrong node. This page demonstrates the drift.
-          </>
-        }
-        steps={[
-          'Take a snapshot, note the aria-ref for "Bravo"',
-          'Click "Re-render" to rotate the IDs',
-          'Take a fresh snapshot and click via the new aria-ref',
-          'Reusing the old ref would hit a different (or missing) button',
-        ]}
-        success={[
-          'Test re-takes a snapshot after any render or navigation.',
-          'aria-ref values are never cached across interactions.',
-          'Tests prefer stable selectors (role + name, data-testid) for assertions.',
-        ]}
-        gotcha={
-          <>
-            Agents copy an aria-ref from one step and use it six steps later. By then the DOM has
-            re-rendered and the ref points at something else — or nothing.
-          </>
-        }
-      />
-
-      <div className="rounded-lg border bg-card p-5 space-y-4" data-tick={tick}>
-        <div className="flex gap-2 flex-wrap">
-          {['Alpha', 'Bravo', 'Charlie', 'Delta'].map((label, i) => (
-            <button
-              key={ids[i] ?? i}
-              aria-ref={ids[i]}
-              data-ref={ids[i]}
-              className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-            >
-              {label} <span className="text-muted-foreground font-mono text-xs ml-1">({ids[i]})</span>
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={() => setTick((t) => t + 1)}
-          className="rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium"
-        >
-          Re-render (rotate IDs)
-        </button>
+    <div className="space-y-4 max-w-2xl">
+      <div>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <Keyboard className="h-7 w-7 text-primary" />
+          Keyboard shortcuts
+        </h1>
+        <p className="text-muted-foreground">Customize and rebind actions.</p>
       </div>
+
+      <div className="rounded-lg border bg-card">
+        <ul className="divide-y">
+          {SHORTCUTS.map((s, i) => (
+            <li
+              key={ids[i] ?? i}
+              className="flex items-center justify-between px-4 py-3"
+              data-ref={ids[i]}
+              aria-ref={ids[i]}
+            >
+              <div>
+                <div className="font-medium text-sm">{s.label}</div>
+                <div className="text-xs text-muted-foreground font-mono">ref: {ids[i]}</div>
+              </div>
+              <kbd className="rounded-md border bg-muted px-2 py-1 text-xs font-mono">{s.keys}</kbd>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <button
+        onClick={() => setTick((t) => t + 1)}
+        className="rounded-md border border-input px-3 py-1.5 text-sm inline-flex items-center gap-1.5 hover:bg-accent"
+      >
+        <RefreshCw className="h-4 w-4" />
+        Regenerate refs
+      </button>
     </div>
   )
 }

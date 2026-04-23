@@ -1,126 +1,114 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { PageHeader, ScenarioPanel } from '@/components/lab/ScenarioCard'
+import { Mail, Phone, Building2, User, Calendar, Edit, Trash2 } from 'lucide-react'
 
-export default function RuntimeCrashPage() {
-  const [loaded, setLoaded] = useState(false)
+export default function ContactProfilePage() {
   const [crashed, setCrashed] = useState(false)
-  const [reported, setReported] = useState(false)
 
   useEffect(() => {
     const t = setTimeout(() => {
-      setLoaded(true)
-      setTimeout(() => {
-        try {
-          const err = new Error(
-            'Synthetic TypeError: Cannot read properties of undefined (reading "id")'
-          )
-          window.dispatchEvent(new ErrorEvent('error', { error: err, message: err.message }))
-          setCrashed(true)
-        } catch {}
-      }, 1200)
-    }, 400)
+      try {
+        const err = new Error(
+          'Cannot read properties of undefined (reading "id")'
+        )
+        window.dispatchEvent(new ErrorEvent('error', { error: err, message: err.message }))
+        setCrashed(true)
+      } catch {}
+    }, 1600)
     return () => clearTimeout(t)
   }, [])
 
-  const reportBlocker = async () => {
-    await fetch('/api/blocker', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'app-bug',
-        page: '/lab/diagnose/runtime-crash',
-        detail: 'Synthetic TypeError dispatched ~1.2s after navigation',
-      }),
-    })
-    setReported(true)
-  }
-
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Runtime crash"
-        subtitle="Contact detail loads fine, then throws a TypeError after initial render. This is an app bug — no test can save it."
-        route="/lab/diagnose/runtime-crash"
-        patterns={['app bug', 'post-nav crash', 'blocker report']}
-      />
-
-      <ScenarioPanel
-        story={
-          <>
-            A user navigates to the page. It loads. About 1.2 seconds later an unhandled
-            <code className="font-mono text-xs mx-1">TypeError</code> fires in the console and the
-            interactive part of the page stops working.
-          </>
-        }
-        steps={[
-          'Wait for the page to mount',
-          'Observe the crash notice appear after ~1s',
-          'Classify: this is an app bug, not a test bug',
-          'POST /api/blocker with type="app-bug"',
-          'Stop — do not retry selectors',
-        ]}
-        success={[
-          <>
-            Crash is detected via <code className="font-mono text-xs">window.onerror</code> or page
-            state <code className="font-mono text-xs">data-crashed</code>.
-          </>,
-          'Classification is app-bug (UI threw), not test-bug or backend-bug.',
-          'No selector-healing attempts are made.',
-          'Blocker endpoint receives exactly one report.',
-        ]}
-        gotcha={
-          <>
-            Naive healers keep trying <code className="font-mono text-xs">page.click()</code> and
-            blame the selectors. The DOM is fine — the React tree is dead. Bail.
-          </>
-        }
-      />
-
-      <div className="rounded-lg border bg-card p-5 space-y-4" data-crashed={crashed}>
-        <div className="flex items-center gap-3">
-          <span
-            className={`inline-block h-2 w-2 rounded-full ${
-              !loaded ? 'bg-slate-400' : crashed ? 'bg-rose-500' : 'bg-amber-500 animate-pulse'
-            }`}
-          />
-          <span className="text-sm font-medium" data-page-state={crashed ? 'crashed' : loaded ? 'loaded' : 'loading'}>
-            {!loaded ? 'Loading...' : crashed ? 'Crashed' : 'Loaded — awaiting crash...'}
-          </span>
-        </div>
-
-        <div className="rounded-md bg-slate-50 p-4 border text-sm">
-          <div className="text-xs text-muted-foreground mb-2 uppercase tracking-wide">
-            Simulated contact detail
+    <div className="space-y-6 max-w-4xl" data-crashed={crashed}>
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div className="flex items-start gap-4">
+          <div className="h-16 w-16 rounded-lg bg-primary/10 flex items-center justify-center">
+            <User className="h-8 w-8 text-primary" />
           </div>
-          <dl className="grid grid-cols-[120px,1fr] gap-y-1 text-sm">
-            <dt className="text-muted-foreground">Name</dt>
-            <dd>Jane Smith</dd>
-            <dt className="text-muted-foreground">Title</dt>
-            <dd>VP Operations</dd>
-            <dt className="text-muted-foreground">Account</dt>
-            <dd>ACME Corp</dd>
+          <div>
+            <h1 className="text-3xl font-bold">Priya Ramanathan</h1>
+            <p className="text-muted-foreground">VP Operations · ACME Corp</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button className="rounded-md border border-input px-3 py-1.5 text-sm inline-flex items-center gap-1.5 hover:bg-accent">
+            <Edit className="h-4 w-4" />
+            Edit
+          </button>
+          <button className="rounded-md border border-input px-3 py-1.5 text-sm inline-flex items-center gap-1.5 hover:bg-accent">
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-lg border bg-card p-5">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Contact details
+          </h3>
+          <dl className="space-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <a href="mailto:priya@acme.com" className="text-primary hover:underline">
+                priya@acme.com
+              </a>
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <span>+1 (415) 555-0182</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <span>ACME Corp · 250-500 employees</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span>Added 3 Mar 2026</span>
+            </div>
           </dl>
         </div>
 
-        {crashed && (
-          <div className="rounded-md border border-rose-300 bg-rose-50 p-4 space-y-2">
-            <div className="text-xs font-semibold uppercase text-rose-700">Console error</div>
-            <pre className="text-xs text-rose-900 font-mono whitespace-pre-wrap">
-TypeError: Cannot read properties of undefined (reading &quot;id&quot;)
-    at ContactDetail (contact.tsx:42:18)
-            </pre>
-            <button
-              onClick={reportBlocker}
-              disabled={reported}
-              className="rounded-md bg-rose-600 text-white px-3 py-1.5 text-sm font-medium disabled:opacity-60"
-              data-testid="blocker-report"
-            >
-              {reported ? '✓ Reported' : 'Report blocker'}
-            </button>
-          </div>
-        )}
+        <div className="rounded-lg border bg-card p-5">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Open opportunities
+          </h3>
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-center justify-between border-b pb-2">
+              <span className="font-medium">ACME Q3 expansion</span>
+              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">Proposal</span>
+            </li>
+            <li className="flex items-center justify-between">
+              <span className="font-medium">Training add-on</span>
+              <span className="text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">Qualification</span>
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-lg border bg-card p-5 md:col-span-2">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Recent activity
+          </h3>
+          {crashed ? (
+            <div className="text-sm text-muted-foreground italic">Failed to load activity.</div>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              <li className="flex gap-3 pb-2 border-b">
+                <span className="text-xs text-muted-foreground w-20">Apr 19</span>
+                <span>Call logged · 32 min</span>
+              </li>
+              <li className="flex gap-3 pb-2 border-b">
+                <span className="text-xs text-muted-foreground w-20">Apr 15</span>
+                <span>Email sent · &quot;Q3 proposal review&quot;</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-xs text-muted-foreground w-20">Apr 12</span>
+                <span>Meeting scheduled for Apr 22</span>
+              </li>
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   )

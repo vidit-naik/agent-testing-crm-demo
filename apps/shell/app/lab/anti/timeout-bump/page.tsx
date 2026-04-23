@@ -1,89 +1,67 @@
 'use client'
 
 import { useState } from 'react'
-import { PageHeader, ScenarioPanel } from '@/components/lab/ScenarioCard'
+import { Send, Save } from 'lucide-react'
 
-export default function TimeoutBumpPage() {
-  const [clicked, setClicked] = useState<'decoy' | 'real' | null>(null)
+export default function DraftPage() {
+  const [body, setBody] = useState('Following up on our call about the Q3 expansion. Pricing attached.')
+  const [toast, setToast] = useState<string | null>(null)
+
+  const sendNow = () => {
+    setToast('Draft queued for sending')
+    setTimeout(() => setToast(null), 2400)
+  }
+
+  const saveDraft = () => {
+    setToast('Draft saved')
+    setTimeout(() => setToast(null), 2400)
+  }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Timeout bump"
-        subtitle="Two Submit buttons. Both resolve in 200ms. Only one does the right thing. Fix is to change the selector, not the timeout."
-        route="/lab/anti/timeout-bump"
-        patterns={['anti-pattern', 'wrong selector', 'timeout discipline']}
-      />
+    <div className="space-y-4 max-w-2xl">
+      <div>
+        <h1 className="text-3xl font-bold">Email compose</h1>
+        <p className="text-muted-foreground">To: priya@acme.com · Re: Q3 proposal review</p>
+      </div>
 
-      <ScenarioPanel
-        story={
-          <>
-            When a click times out, tired agents bump from 10s → 15s → 30s. That never helps when
-            the real fix is &ldquo;pick a different button.&rdquo; Both buttons below resolve fast;
-            only the second one is wired to submit the deal.
-          </>
-        }
-        steps={[
-          <>
-            Try clicking the button whose <code className="font-mono text-xs">aria-label=&quot;Submit&quot;</code>
-          </>,
-          'Notice the state shows "decoy" — wrong click',
-          <>
-            Switch selector to the one tagged{' '}
-            <code className="font-mono text-xs">data-testid=&quot;real-submit&quot;</code>
-          </>,
-          'Confirm state becomes "real"',
-        ]}
-        success={[
-          'When the first selector is wrong, the test re-examines the DOM, not the timeout.',
-          'Final passing test targets data-testid, not aria-label.',
-          'No timeout > default is set.',
-        ]}
-        gotcha={
-          <>
-            aria-label looks authoritative. It isn&apos;t always. When both candidates resolve fast,
-            a wrong click succeeds silently and the downstream assertion fails — the agent blames
-            timing, not selector choice.
-          </>
-        }
-      />
-
-      <div className="rounded-lg border bg-card p-5 space-y-4">
-        <div className="flex gap-3 flex-wrap">
+      <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="border-b px-4 py-2.5 text-sm">
+          <span className="text-muted-foreground">Subject:</span>{' '}
+          <span className="font-medium">Q3 proposal review</span>
+        </div>
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          rows={10}
+          className="w-full px-4 py-3 text-sm focus:outline-none resize-none"
+        />
+        <div className="border-t px-4 py-2.5 flex items-center justify-between">
           <button
-            onClick={() => setClicked('decoy')}
+            onClick={saveDraft}
             aria-label="Submit"
             data-primary="false"
-            className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-accent"
+            className="rounded-md border border-input px-3 py-1.5 text-sm font-medium hover:bg-accent inline-flex items-center gap-1.5"
           >
-            Submit (decoy)
+            <Save className="h-4 w-4" />
+            Save draft
           </button>
           <button
-            onClick={() => setClicked('real')}
+            onClick={sendNow}
             data-testid="real-submit"
-            className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium"
+            className="rounded-md bg-primary text-primary-foreground px-4 py-1.5 text-sm font-medium inline-flex items-center gap-1.5"
           >
-            Real Submit
+            <Send className="h-4 w-4" />
+            Send
           </button>
         </div>
-
-        <div
-          className={`rounded-md border p-3 text-sm ${
-            clicked === 'real'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-              : clicked === 'decoy'
-              ? 'border-rose-200 bg-rose-50 text-rose-900'
-              : 'border-dashed bg-muted/30 text-muted-foreground'
-          }`}
-          data-click-state={clicked ?? 'none'}
-        >
-          {clicked === 'real'
-            ? '✓ Real submit clicked. Deal submitted successfully.'
-            : clicked === 'decoy'
-            ? '✗ Decoy clicked. Nothing happened — re-select.'
-            : 'No click yet.'}
-        </div>
       </div>
+
+      {toast && (
+        <div className="rounded-md border bg-card px-4 py-2 text-sm shadow-sm inline-flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          {toast}
+        </div>
+      )}
     </div>
   )
 }

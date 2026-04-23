@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { PageHeader, ScenarioPanel } from '@/components/lab/ScenarioCard'
+import { ShieldAlert, RotateCcw } from 'lucide-react'
 
-export default function NewpageShotgunPage() {
+export default function SessionLimitPage() {
   const [pageCount, setPageCount] = useState(1)
   const [blocked, setBlocked] = useState(false)
 
@@ -26,67 +26,50 @@ export default function NewpageShotgunPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Newpage shotgun"
-        subtitle="This page fails once you exceed 2 fresh browser contexts. Reuse pages; do not spawn."
-        route="/lab/anti/newpage-shotgun"
-        patterns={['anti-pattern', 'page reuse', 'context budget']}
-      />
-
-      <ScenarioPanel
-        story={
-          <>
-            Real customer apps don&apos;t love it when a test spawns 46 pages to try the same flow 46
-            different ways. This page imposes a hard cap of 2 fresh browser contexts per session.
-          </>
-        }
-        steps={[
-          'Open the page in a fresh context → counter = 1',
-          'Open again (or reload in an incognito) → counter = 2',
-          'Open a 3rd time → page blocks with an error',
-          'A well-behaved agent reuses pages instead of spawning more',
-        ]}
-        success={[
-          'Agent uses ≤ 2 fresh contexts across the entire test.',
-          'Subsequent interactions happen on existing pages, not new ones.',
-          <>
-            No <code className="font-mono text-xs">context.newPage()</code> loops on failure.
-          </>,
-        ]}
-        gotcha={
-          <>
-            When a page misbehaves, the reflex is <code className="font-mono text-xs">newPage()</code>.
-            That reflex is how one real trace hit 46 pages and 36 login clicks before giving up.
-          </>
-        }
-      />
-
-      <div className="rounded-lg border bg-card p-5 space-y-3" data-page-count={pageCount} data-blocked={blocked}>
-        <div className="flex items-baseline gap-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Fresh pages this session
-          </span>
-          <span className="text-2xl font-bold">{pageCount}</span>
-        </div>
-        {blocked ? (
-          <div className="rounded-md border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900">
-            Blocked. You exceeded the 2-page budget. Reuse an existing page and navigate instead of
-            spawning a new one.
-          </div>
-        ) : (
-          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-            OK. You have {Math.max(0, 2 - pageCount)} fresh page{2 - pageCount === 1 ? '' : 's'}{' '}
-            remaining.
-          </div>
-        )}
-        <button
-          onClick={reset}
-          className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-        >
-          Reset counter
-        </button>
+    <div className="space-y-4 max-w-xl">
+      <div>
+        <h1 className="text-3xl font-bold">Secure workspace</h1>
+        <p className="text-muted-foreground">
+          High-sensitivity area. Session limits apply.
+        </p>
       </div>
+
+      {blocked ? (
+        <div className="rounded-lg border border-rose-300 bg-rose-50 p-6 space-y-3" data-blocked="true">
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="h-8 w-8 text-rose-600" />
+            <h2 className="text-lg font-semibold text-rose-900">Session limit reached</h2>
+          </div>
+          <p className="text-sm text-rose-900">
+            You&apos;ve opened this workspace in {pageCount} browser sessions. To protect customer
+            data, only 2 active sessions are allowed per user.
+          </p>
+          <p className="text-sm text-rose-900">
+            Close other tabs with this page open, or reset below.
+          </p>
+          <button
+            onClick={reset}
+            className="rounded-md bg-rose-600 text-white px-3 py-1.5 text-sm font-medium inline-flex items-center gap-1.5"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Reset session counter
+          </button>
+        </div>
+      ) : (
+        <div className="rounded-lg border bg-card p-6 space-y-3" data-blocked="false">
+          <h2 className="font-semibold">Welcome back</h2>
+          <p className="text-sm text-muted-foreground">
+            You have {Math.max(0, 2 - pageCount)} additional session
+            {2 - pageCount === 1 ? '' : 's'} available.
+          </p>
+          <div className="rounded-md border bg-muted/30 p-3 text-sm">
+            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+              Sessions this device
+            </div>
+            <div className="text-2xl font-bold">{pageCount} / 2</div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

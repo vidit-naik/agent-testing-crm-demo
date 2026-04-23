@@ -1,59 +1,82 @@
 'use client'
 
-import { PageHeader, ScenarioPanel } from '@/components/lab/ScenarioCard'
+import { useState } from 'react'
+import { FileBarChart2, Download, RefreshCw } from 'lucide-react'
 
-export default function FullRerunDebugPage() {
+export default function ReportsPage() {
+  const [generating, setGenerating] = useState(false)
+  const [ready, setReady] = useState(false)
+
+  const generate = () => {
+    setGenerating(true)
+    setReady(false)
+    setTimeout(() => {
+      setGenerating(false)
+      setReady(true)
+    }, 1800)
+  }
+
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Full rerun debug"
-        subtitle="This is a meta-page. It represents the class of tests whose full suite takes 90s to run. Re-running the whole thing to debug one failure is the anti-pattern."
-        route="/lab/anti/full-rerun-debug"
-        patterns={['anti-pattern', 'narrow output', 'debug discipline']}
-      />
+    <div className="space-y-4 max-w-2xl">
+      <div>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <FileBarChart2 className="h-7 w-7 text-primary" />
+          Quarterly report
+        </h1>
+        <p className="text-muted-foreground">Generate the Q3 2026 pipeline report.</p>
+      </div>
 
-      <ScenarioPanel
-        story={
-          <>
-            A test in a 90-second suite fails. The default reflex is{' '}
-            <code className="font-mono text-xs">npx playwright test</code> again — another 90
-            seconds. Correct reflex: read the <code className="font-mono text-xs">--grep</code>-narrowed
-            output, or <code className="font-mono text-xs">pw_eval</code> the specific step.
-          </>
-        }
-        steps={[
-          'Read the failing test name from the previous output',
-          <>
-            Re-run with <code className="font-mono text-xs">--grep &quot;failing name&quot;</code>
-          </>,
-          'Or use pw_eval to interactively probe the step',
-          'Do NOT re-run the full suite to "see where it fails"',
-        ]}
-        success={[
-          'Repeat invocations all use --grep or pw_eval, not full-suite runs.',
-          'Full-suite re-invocations ≤ 2 across the entire session.',
-          'Timeout is not bumped to let full suite complete faster.',
-        ]}
-        gotcha={
-          <>
-            The harness here scores agent behavior on real test runs. If you&apos;re arriving at
-            this page from an agent session, the scoring is already watching the commands you
-            execute on the shell.
-          </>
-        }
-      />
+      <div className="rounded-lg border bg-card p-6 space-y-4">
+        <dl className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <dt className="text-muted-foreground text-xs uppercase tracking-wide">Period</dt>
+            <dd className="font-medium mt-1">Jul 1 – Sep 30, 2026</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground text-xs uppercase tracking-wide">Records</dt>
+            <dd className="font-medium mt-1">~8,400 opportunities</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground text-xs uppercase tracking-wide">Format</dt>
+            <dd className="font-medium mt-1">PDF + CSV</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground text-xs uppercase tracking-wide">Est. time</dt>
+            <dd className="font-medium mt-1">~2 min</dd>
+          </div>
+        </dl>
 
-      <div className="rounded-lg border bg-card p-5 text-sm space-y-2">
-        <div className="font-semibold">Example narrowing</div>
-        <pre className="rounded-md bg-muted p-3 text-xs overflow-x-auto">
-          {`# Instead of:
-npx playwright test
+        <div className="flex gap-2">
+          <button
+            onClick={generate}
+            disabled={generating}
+            className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium disabled:opacity-50 inline-flex items-center gap-2"
+          >
+            {generating ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <FileBarChart2 className="h-4 w-4" />
+                Generate report
+              </>
+            )}
+          </button>
+          {ready && (
+            <button className="rounded-md border border-input px-4 py-2 text-sm font-medium inline-flex items-center gap-2 hover:bg-accent">
+              <Download className="h-4 w-4" />
+              Download PDF
+            </button>
+          )}
+        </div>
 
-# Use:
-npx playwright test --grep "opportunities wizard > saves a deal"
-# or
-pw_eval "await expect(page.getByRole('dialog')).toBeVisible()"`}
-        </pre>
+        {ready && (
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+            Report ready. 8,426 opportunities included.
+          </div>
+        )}
       </div>
     </div>
   )
