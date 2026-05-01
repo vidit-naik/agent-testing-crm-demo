@@ -1,14 +1,14 @@
 export const runtime = 'nodejs'
 
 const LINES = [
-  'Agent connecting...',
-  'Handshake OK',
-  'Analyzing recent deals...',
+  'Opening activity stream',
+  'Loading opportunity changes',
+  'Reviewing account health signals',
   'Opportunity ACME-42 moved to Proposal',
   'Contact Bob Smith added to Globex',
   'Risk flagged on Initech renewal',
   'Note added to Umbrella expansion',
-  'Draft summary ready.',
+  'Summary ready',
 ]
 
 export async function GET() {

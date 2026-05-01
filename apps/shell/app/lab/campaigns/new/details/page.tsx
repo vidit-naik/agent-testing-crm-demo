@@ -30,14 +30,15 @@ export default function DetailsStep() {
   }
 
   return (
-    <div className="max-w-2xl space-y-4">
+    <div className="max-w-4xl space-y-4">
       <div>
         <h1 className="text-3xl font-bold">New campaign</h1>
-        <p className="text-muted-foreground">Give your campaign a name and pick a goal.</p>
+        <p className="text-muted-foreground">Set the campaign goal, channel, and ownership.</p>
       </div>
       <WizardSteps steps={CAMPAIGN_STEPS} currentId="details" />
 
-      <form onSubmit={next} className="rounded-lg border bg-card p-6 space-y-4">
+      <form onSubmit={next} className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <section className="rounded-lg border bg-card p-6 space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Campaign name</label>
           <input
@@ -91,8 +92,41 @@ export default function DetailsStep() {
             ))}
           </div>
         </div>
+        </section>
 
-        <div className="flex justify-end pt-2">
+        <aside className="space-y-4">
+          <section className="rounded-lg border bg-card p-4">
+            <h2 className="text-sm font-semibold">Campaign profile</h2>
+            <div className="mt-4 space-y-3 text-sm">
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Goal</span>
+                <span className="font-medium capitalize">{state.goal || 'Not selected'}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Channel</span>
+                <span className="font-medium">{state.channel ? state.channel.replace('both', 'Email + In-app') : 'Not selected'}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Owner</span>
+                <span className="font-medium">Growth team</span>
+              </div>
+            </div>
+          </section>
+          <section className="rounded-lg border bg-card p-4">
+            <h2 className="text-sm font-semibold">Goal fit</h2>
+            <div className="mt-3 text-sm text-muted-foreground">
+              {state.goal === 'renewal'
+                ? 'Best for customers with upcoming contract dates.'
+                : state.goal === 'winback'
+                ? 'Best for inactive accounts and lost opportunities.'
+                : state.goal === 'engagement'
+                ? 'Best for product adoption and activation.'
+                : state.goal === 'awareness'
+                ? 'Best for broad announcements and launches.'
+                : 'Select a goal to see the campaign profile.'}
+            </div>
+          </section>
+          <div className="flex justify-end">
           <button
             type="submit"
             disabled={!valid}
@@ -101,7 +135,8 @@ export default function DetailsStep() {
           >
             Continue
           </button>
-        </div>
+          </div>
+        </aside>
       </form>
     </div>
   )

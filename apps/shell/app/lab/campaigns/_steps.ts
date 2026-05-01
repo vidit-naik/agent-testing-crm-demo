@@ -14,18 +14,19 @@ export type CampaignState = {
   audience: {
     stages: string[]
     industries: string[]
+    excludedIndustries: string[]
     minArr: string
     includeInactive: boolean
   }
-  template: { subject: string; body: string }
-  schedule: { mode: 'now' | 'schedule'; sendAt: string }
+  template: { subject: string; body: string; preheader: string }
+  schedule: { mode: 'now' | 'schedule'; sendAt: string; timezone: string; quietHours: boolean }
 }
 
 export const CAMPAIGN_DEFAULT: CampaignState = {
   name: '',
   goal: '',
   channel: '',
-  audience: { stages: [], industries: [], minArr: '', includeInactive: false },
-  template: { subject: '', body: '' },
-  schedule: { mode: 'now', sendAt: '' },
+  audience: { stages: [], industries: [], excludedIndustries: [], minArr: '', includeInactive: false },
+  template: { subject: '', body: '', preheader: '' },
+  schedule: { mode: 'now', sendAt: '', timezone: 'America/Los_Angeles', quietHours: true },
 }

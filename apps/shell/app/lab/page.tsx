@@ -28,170 +28,170 @@ type Entry = {
 
 const SECTIONS: { heading: string; entries: Entry[] }[] = [
   {
-    heading: 'Multi-step flows',
+    heading: 'Workflows',
     entries: [
       {
         href: '/lab/onboarding',
         title: 'Workspace onboarding',
-        desc: '4-step wizard · workspace → team → integrations → review.',
+        desc: 'Set up a workspace, invite teammates, and review launch settings.',
         icon: Rocket,
         tag: '4 pages',
       },
       {
         href: '/lab/import-contacts',
         title: 'Import contacts',
-        desc: '3-step CSV import · upload → map fields → review.',
+        desc: 'Upload, map, review, and process a contact list.',
         icon: Upload,
         tag: '3 pages',
       },
       {
         href: '/lab/campaigns',
         title: 'Campaign builder',
-        desc: 'List + 4-step create · details → audience → template → schedule.',
+        desc: 'Plan audiences, design messages, and schedule outreach.',
         icon: Megaphone,
         tag: '5 pages',
       },
     ],
   },
   {
-    heading: 'Canvas / inline frameworks',
+    heading: 'Interactive tools',
     entries: [
       {
         href: '/lab/seatmap',
         title: 'Seat map',
-        desc: 'Canvas event booking (Lit Web Component).',
+        desc: 'Reserve movie seats and complete ticket checkout.',
         icon: MapIcon,
         tag: 'Lit',
       },
       {
         href: '/lab/workflow',
         title: 'Workflow builder',
-        desc: 'Pan/zoom node canvas (xyflow).',
+        desc: 'Design, validate, and publish lead routing automations.',
         icon: Workflow,
         tag: 'React',
       },
     ],
   },
   {
-    heading: 'Cross-stack',
+    heading: 'Business tools',
     entries: [
       {
         href: '/lab/reports',
         title: 'Reports (admin)',
-        desc: 'Virtualized ag-Grid 10k rows — iframed Vite React.',
+        desc: 'Review pipeline reports and revenue data.',
         icon: BarChart3,
-        tag: 'Vite · iframe',
+        tag: 'Reports',
       },
       {
         href: '/lab/quote',
         title: 'Quote builder',
-        desc: 'Multi-step cross-domain quote flow.',
+        desc: 'Prepare quote terms and continue to checkout.',
         icon: FileCheck,
         tag: 'Angular · link-out',
       },
       {
         href: '/lab/pricing-calc',
         title: 'Pricing calculator',
-        desc: 'Legacy Vue 2 options API SFC.',
+        desc: 'Estimate plan costs and product add-ons.',
         icon: Calculator,
         tag: 'Vue 2 · link-out',
       },
       {
         href: '/lab/legacy-admin',
         title: 'Legacy admin',
-        desc: 'AngularJS 1.x hosting React via react2angular.',
+        desc: 'Manage administrative settings and records.',
         icon: Server,
         tag: 'AngularJS · link-out',
       },
     ],
   },
   {
-    heading: 'Real-time & streaming',
+    heading: 'Live workspaces',
     entries: [
       {
         href: '/lab/live-board',
         title: 'Live deal board',
-        desc: 'Yjs + WebSocket. "Connected — syncing" ≠ online.',
+        desc: 'Manage opportunities on a synchronized pipeline board.',
         icon: Activity,
         tag: 'Yjs',
       },
       {
         href: '/lab/collab-notes',
         title: 'Collaborative notes',
-        desc: 'Multi-user RBAC state verification.',
+        desc: 'Share deal notes with role-based editing.',
         icon: Users2,
         tag: 'Yjs',
       },
       {
         href: '/lab/feed',
         title: 'Activity feed',
-        desc: 'SSE-streamed reducer chat.',
+        desc: 'Generate a digest from recent account activity.',
         icon: Rss,
-        tag: 'SSE',
+        tag: 'Digest',
       },
     ],
   },
   {
-    heading: 'Diagnostics',
+    heading: 'Operations',
     entries: [
       {
         href: '/lab/diagnose/runtime-crash',
         title: 'Runtime crash',
-        desc: 'Synthetic window.onerror post-nav.',
+        desc: 'Review a workspace recovery event.',
         icon: Bug,
         tag: 'diagnose',
       },
       {
         href: '/lab/diagnose/backend-down',
         title: 'Backend down',
-        desc: 'Wizard with 504-returning API.',
+        desc: 'Monitor service availability during setup.',
         icon: Bug,
         tag: 'diagnose',
       },
       {
         href: '/lab/diagnose/eventual-vs-stale',
         title: 'Eventual vs stale',
-        desc: '2.5s ± 500ms settle, or ?broken=1.',
+        desc: 'Compare pending and refreshed account data.',
         icon: Bug,
         tag: 'diagnose',
       },
     ],
   },
   {
-    heading: 'Anti-patterns',
+    heading: 'Resilience checks',
     entries: [
       {
         href: '/lab/anti/newpage-shotgun',
-        title: 'Newpage shotgun',
-        desc: 'Limit ≤2 fresh pages.',
+        title: 'Workspace unavailable',
+        desc: 'Review restricted workspace access.',
         icon: AlertTriangle,
         tag: 'anti',
       },
       {
         href: '/lab/anti/full-rerun-debug',
-        title: 'Full rerun debug',
-        desc: '90s full suite; narrow output.',
+        title: 'Debug run',
+        desc: 'Review a long-running diagnostic job.',
         icon: AlertTriangle,
         tag: 'anti',
       },
       {
         href: '/lab/anti/snapshot-drift',
-        title: 'Snapshot drift',
-        desc: 'aria-ref IDs rotate.',
+        title: 'Keyboard shortcuts',
+        desc: 'Review shortcut assignments and labels.',
         icon: AlertTriangle,
         tag: 'anti',
       },
       {
         href: '/lab/anti/timeout-bump',
-        title: 'Timeout bump',
-        desc: 'Wrong selector resolves fast.',
+        title: 'Timeout review',
+        desc: 'Review delayed workspace actions.',
         icon: AlertTriangle,
         tag: 'anti',
       },
       {
         href: '/lab/anti/path-not-dir',
-        title: 'Path not dir',
-        desc: 'Flaky read returns ENOTDIR.',
+        title: 'File access',
+        desc: 'Review a document access request.',
         icon: AlertTriangle,
         tag: 'anti',
       },
@@ -205,8 +205,7 @@ export default function LabIndex() {
       <div>
         <h1 className="text-3xl font-bold">Lab</h1>
         <p className="text-muted-foreground">
-          Feature surfaces for agent testing. Each flow is designed to look like real product
-          functionality.
+          Product workflows, operational tools, and live collaboration surfaces.
         </p>
       </div>
 
