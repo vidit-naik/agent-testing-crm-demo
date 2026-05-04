@@ -256,7 +256,7 @@ export default function SeatMapPage() {
               <div>
                 <h2 className="text-lg font-semibold">Choose seats</h2>
                 <p className="text-sm text-muted-foreground">
-                  The seating chart is canvas-rendered inside a Lit Web Component.
+                  Select seats for the current showtime.
                 </p>
               </div>
               <div className="rounded-md bg-muted px-3 py-2 text-right">

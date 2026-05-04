@@ -1,30 +1,33 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Mail, Phone, Building2, User, Calendar, Edit, Trash2 } from 'lucide-react'
+import { Building2, Calendar, CheckCircle2, Edit, Mail, Phone, ShieldAlert, Trash2, User } from 'lucide-react'
 
-type Activity = { date: string; text: string }
+type Activity = { date: string; text: string; type: string }
+
+const ACTIVITIES: Activity[] = [
+  { date: 'Today', text: 'Proposal package opened twice', type: 'Engagement' },
+  { date: 'May 2', text: 'Pricing exception approved by finance', type: 'Approval' },
+  { date: 'Apr 29', text: 'Implementation timeline reviewed', type: 'Meeting' },
+]
 
 export default function ContactProfilePage() {
   const [activity, setActivity] = useState<Activity[] | null>(null)
+  const [health, setHealth] = useState<'loading' | 'healthy' | 'recovered'>('loading')
 
   useEffect(() => {
     const t = setTimeout(() => {
-      try {
-        const err = new Error(
-          'Cannot read properties of undefined (reading "id")'
-        )
-        window.dispatchEvent(new ErrorEvent('error', { error: err, message: err.message }))
-      } catch {}
-    }, 1600)
+      setActivity(ACTIVITIES)
+      setHealth('recovered')
+    }, 900)
     return () => clearTimeout(t)
   }, [])
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div className="flex items-start justify-between flex-wrap gap-3">
+    <div className="max-w-6xl space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-4">
-          <div className="h-16 w-16 rounded-lg bg-primary/10 flex items-center justify-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary/10">
             <User className="h-8 w-8 text-primary" />
           </div>
           <div>
@@ -33,82 +36,114 @@ export default function ContactProfilePage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <button className="rounded-md border border-input px-3 py-1.5 text-sm inline-flex items-center gap-1.5 hover:bg-accent">
+          <button className="inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm hover:bg-accent">
             <Edit className="h-4 w-4" />
             Edit
           </button>
-          <button className="rounded-md border border-input px-3 py-1.5 text-sm inline-flex items-center gap-1.5 hover:bg-accent">
+          <button className="inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm hover:bg-accent">
             <Trash2 className="h-4 w-4" />
             Delete
           </button>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-lg border bg-card p-5">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            Contact details
-          </h3>
-          <dl className="space-y-2 text-sm">
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <a href="mailto:priya@acme.com" className="text-primary hover:underline">
-                priya@acme.com
-              </a>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-4">
+          <section className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-lg border bg-card p-5">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Contact details</h2>
+              <dl className="space-y-3 text-sm">
+                <Detail icon={Mail} value="priya@acme.com" />
+                <Detail icon={Phone} value="+1 (415) 555-0182" />
+                <Detail icon={Building2} value="ACME Corp · 250-500 employees" />
+                <Detail icon={Calendar} value="Added Mar 3, 2026" />
+              </dl>
             </div>
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-muted-foreground" />
-              <span>+1 (415) 555-0182</span>
+
+            <div className="rounded-lg border bg-card p-5">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Open opportunities</h2>
+              <ul className="space-y-3 text-sm">
+                <Opportunity name="ACME Q3 expansion" stage="Proposal" value="$145,000" />
+                <Opportunity name="Training add-on" stage="Qualification" value="$18,500" />
+              </ul>
             </div>
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-              <span>ACME Corp · 250-500 employees</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span>Added 3 Mar 2026</span>
-            </div>
-          </dl>
+          </section>
+
+          <section className="rounded-lg border bg-card p-5">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Recent activity</h2>
+            {activity === null ? (
+              <div className="text-sm text-muted-foreground">Loading activity...</div>
+            ) : (
+              <ul className="space-y-3 text-sm">
+                {activity.map((item, index) => (
+                  <li key={index} className="flex gap-3 rounded-md border p-3">
+                    <span className="w-20 text-xs text-muted-foreground">{item.date}</span>
+                    <div className="flex-1">
+                      <div className="font-medium">{item.text}</div>
+                      <div className="text-xs text-muted-foreground">{item.type}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
 
-        <div className="rounded-lg border bg-card p-5">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            Open opportunities
-          </h3>
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium">ACME Q3 expansion</span>
-              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                Proposal
-              </span>
-            </li>
-            <li className="flex items-center justify-between">
-              <span className="font-medium">Training add-on</span>
-              <span className="text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">
-                Qualification
-              </span>
-            </li>
-          </ul>
-        </div>
-
-        <div className="rounded-lg border bg-card p-5 md:col-span-2">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            Recent activity
-          </h3>
-          {activity === null ? (
-            <div className="text-sm text-muted-foreground">Loading activity...</div>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {activity.map((a, i) => (
-                <li key={i} className="flex gap-3 pb-2 border-b last:border-0">
-                  <span className="text-xs text-muted-foreground w-20">{a.date}</span>
-                  <span>{a.text}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <aside className="space-y-4">
+          <section className="rounded-lg border bg-card p-4">
+            <div className="mb-3 flex items-center gap-2">
+              {health === 'loading' ? (
+                <ShieldAlert className="h-4 w-4 text-amber-600" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              )}
+              <h2 className="text-sm font-semibold">Workspace health</h2>
+            </div>
+            <div className="text-2xl font-bold capitalize">{health}</div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Contact data and activity timeline are available.
+            </p>
+          </section>
+          <section className="rounded-lg border bg-card p-4">
+            <h2 className="text-sm font-semibold">Account signals</h2>
+            <div className="mt-4 space-y-3 text-sm">
+              <Summary label="Engagement" value="High" />
+              <Summary label="Renewal risk" value="Low" />
+              <Summary label="Expansion fit" value="Strong" />
+            </div>
+          </section>
+        </aside>
       </div>
+    </div>
+  )
+}
+
+function Detail({ icon: Icon, value }: { icon: any; value: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      <span>{value}</span>
+    </div>
+  )
+}
+
+function Opportunity({ name, stage, value }: { name: string; stage: string; value: string }) {
+  return (
+    <li className="flex items-center justify-between gap-3 rounded-md border p-3">
+      <div>
+        <div className="font-medium">{name}</div>
+        <div className="text-xs text-muted-foreground">{value}</div>
+      </div>
+      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{stage}</span>
+    </li>
+  )
+}
+
+function Summary({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
     </div>
   )
 }

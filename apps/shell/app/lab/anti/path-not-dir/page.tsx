@@ -1,20 +1,25 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, FolderOpen } from 'lucide-react'
+import { Download, FileText, FolderOpen, Search } from 'lucide-react'
 
 const FILES = [
-  'contract-2024-Q4.pdf',
-  'pricing-acme.pdf',
-  'kickoff-deck.pdf',
-  'msa-globex.pdf',
-  'sow-initech.pdf',
+  { name: 'contract-2024-Q4.pdf', type: 'Contract', owner: 'Legal' },
+  { name: 'pricing-acme.pdf', type: 'Pricing', owner: 'Finance' },
+  { name: 'kickoff-deck.pdf', type: 'Deck', owner: 'Success' },
+  { name: 'msa-globex.pdf', type: 'Contract', owner: 'Legal' },
+  { name: 'sow-initech.pdf', type: 'Statement of work', owner: 'Services' },
 ]
 
 export default function AttachmentsPage() {
-  const [selected, setSelected] = useState<string | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string | null>(FILES[0].name)
+  const [preview, setPreview] = useState<string | null>('Preview will appear after the file is loaded.')
   const [loading, setLoading] = useState(false)
+  const [query, setQuery] = useState('')
+
+  const filtered = FILES.filter((file) =>
+    `${file.name} ${file.type} ${file.owner}`.toLowerCase().includes(query.toLowerCase())
+  )
 
   const open = async (name: string) => {
     setSelected(name)
@@ -24,65 +29,113 @@ export default function AttachmentsPage() {
       const res = await fetch(`/api/anti/read-file?path=attachments/${name}`)
       if (res.ok) {
         const data = await res.json()
-        setPreview(data.snippet || '(empty)')
+        setPreview(data.snippet || 'No preview text available.')
+      } else {
+        setPreview('Preview unavailable for this file.')
       }
-      // Non-2xx: leave preview null, stop spinner. No UI error.
     } catch {
-      // Silent.
+      setPreview('Preview unavailable for this file.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="space-y-4 max-w-3xl">
+    <div className="max-w-6xl space-y-5">
       <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
+        <h1 className="flex items-center gap-2 text-3xl font-bold">
           <FolderOpen className="h-7 w-7 text-primary" />
           Attachments
         </h1>
-        <p className="text-muted-foreground">Files linked to this opportunity.</p>
+        <p className="text-muted-foreground">Files linked to the opportunity.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-[260px,1fr]">
-        <div className="rounded-lg border bg-card">
+      <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)_260px]">
+        <aside className="rounded-lg border bg-card">
+          <div className="border-b p-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search files"
+                className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm"
+              />
+            </div>
+          </div>
           <ul className="divide-y">
-            {FILES.map((f) => (
-              <li key={f}>
+            {filtered.map((file) => (
+              <li key={file.name}>
                 <button
-                  onClick={() => open(f)}
-                  className={`w-full text-left px-3 py-2.5 text-sm hover:bg-accent inline-flex items-center gap-2 ${
-                    selected === f ? 'bg-accent' : ''
+                  type="button"
+                  onClick={() => open(file.name)}
+                  className={`inline-flex w-full items-center gap-2 px-3 py-3 text-left text-sm hover:bg-accent ${
+                    selected === file.name ? 'bg-accent' : ''
                   }`}
-                  data-testid={`file-${f}`}
                 >
                   <FileText className="h-4 w-4 text-muted-foreground" />
-                  <span className="truncate">{f}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{file.name}</span>
+                    <span className="block text-xs text-muted-foreground">{file.type}</span>
+                  </span>
                 </button>
               </li>
             ))}
           </ul>
-        </div>
+        </aside>
 
-        <div className="rounded-lg border bg-card p-5 min-h-[200px]">
+        <section className="min-h-[420px] rounded-lg border bg-card p-5">
           {!selected ? (
-            <p className="text-sm text-muted-foreground text-center py-12">
-              Select a file to preview.
-            </p>
+            <p className="py-16 text-center text-sm text-muted-foreground">Select a file to preview.</p>
           ) : loading ? (
             <p className="text-sm text-muted-foreground">Loading {selected}...</p>
-          ) : preview ? (
-            <div>
-              <div className="text-xs text-muted-foreground mb-2">{selected}</div>
-              <pre className="rounded-md bg-muted p-3 text-xs overflow-x-auto">{preview}</pre>
-            </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-12">
-              Preview unavailable.
-            </p>
+            <div>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold">{selected}</div>
+                  <div className="text-xs text-muted-foreground">Opportunity attachment</div>
+                </div>
+                <button type="button" className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
+                  <Download className="h-4 w-4" />
+                  Download
+                </button>
+              </div>
+              <pre className="min-h-72 overflow-x-auto rounded-md bg-muted p-4 text-xs">{preview}</pre>
+            </div>
           )}
-        </div>
+        </section>
+
+        <aside className="space-y-4">
+          <section className="rounded-lg border bg-card p-4">
+            <h2 className="text-sm font-semibold">File details</h2>
+            <div className="mt-4 space-y-3 text-sm">
+              <Summary label="Selected" value={selected || '-'} />
+              <Summary label="Files" value={String(FILES.length)} />
+              <Summary label="Access" value="Deal team" />
+            </div>
+          </section>
+          <section className="rounded-lg border bg-card p-4">
+            <h2 className="text-sm font-semibold">Owners</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {Array.from(new Set(FILES.map((file) => file.owner))).map((owner) => (
+                <span key={owner} className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
+                  {owner}
+                </span>
+              ))}
+            </div>
+          </section>
+        </aside>
       </div>
+    </div>
+  )
+}
+
+function Summary({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="max-w-36 truncate font-medium">{value}</span>
     </div>
   )
 }
