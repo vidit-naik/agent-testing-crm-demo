@@ -16,6 +16,7 @@ import {
   Rocket,
   Upload,
   Megaphone,
+  Ruler,
 } from 'lucide-react'
 
 type Entry = {
@@ -62,6 +63,13 @@ const SECTIONS: { heading: string; entries: Entry[] }[] = [
         desc: 'Reserve movie seats and complete ticket checkout.',
         icon: MapIcon,
         tag: 'Checkout',
+      },
+      {
+        href: '/lab/blueprint-takeoff',
+        title: 'Blueprint takeoff',
+        desc: 'PDF plan canvas with calibration, takeoffs, edits, and review package.',
+        icon: Ruler,
+        tag: 'Canvas',
       },
       {
         href: '/lab/workflow',
