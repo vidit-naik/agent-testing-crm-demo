@@ -25,6 +25,7 @@ import {
   Undo2,
   X,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 type Point = { x: number; y: number }
 type Tool = 'select' | 'calibrate' | 'linear' | 'area' | 'count'
@@ -67,7 +68,7 @@ const LAYERS: Layer[] = [
 ]
 const STATUSES: Status[] = ['Draft', 'Needs review', 'Approved', 'Rejected']
 
-const TOOL_META: Record<Tool, { label: string; icon: any }> = {
+const TOOL_META: Record<Tool, { label: string; icon: LucideIcon }> = {
   select: { label: 'Select', icon: MousePointer2 },
   calibrate: { label: 'Calibrate', icon: Crosshair },
   linear: { label: 'Linear', icon: Ruler },
@@ -144,7 +145,10 @@ function formatQuantity(value: number, unit: Measurement['unit']) {
 }
 
 function createMeasurementId() {
-  return `takeoff-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return `takeoff-${crypto.randomUUID()}`
+  }
+  return `takeoff-${Math.random().toString(36).slice(2)}`
 }
 
 function planVariantFromName(name: string) {
@@ -209,6 +213,8 @@ function createSeedMeasurements(): Measurement[] {
     unit: unitFor(measurement.kind),
   }))
 }
+
+const INITIAL_MEASUREMENTS = createSeedMeasurements()
 
 function drawBlueprint(
   ctx: CanvasRenderingContext2D,
@@ -298,6 +304,8 @@ function drawBlueprint(
 }
 
 function strokeMeasurement(ctx: CanvasRenderingContext2D, measurement: Measurement, selected: boolean) {
+  if (measurement.kind === 'linear' && measurement.points.length < 2) return
+
   const color = KIND_COLOR[measurement.kind]
   ctx.save()
   ctx.strokeStyle = color
@@ -357,7 +365,7 @@ export function BlueprintTakeoffLab() {
   const [pixelsPerFoot, setPixelsPerFoot] = useState(DEFAULT_PIXELS_PER_FOOT)
   const [knownLength, setKnownLength] = useState('24')
   const [calibrationPoints, setCalibrationPoints] = useState<Point[]>([])
-  const [measurements, setMeasurements] = useState<Measurement[]>(() => createSeedMeasurements())
+  const [measurements, setMeasurements] = useState<Measurement[]>(() => [...INITIAL_MEASUREMENTS])
   const [selectedId, setSelectedId] = useState<string>('seed-wall-a')
   const [selectedIds, setSelectedIds] = useState<string[]>(['seed-wall-a'])
   const [lineDraft, setLineDraft] = useState<{ start: Point; end: Point } | null>(null)
@@ -368,7 +376,7 @@ export function BlueprintTakeoffLab() {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'All' | Status>('All')
   const [disciplineFilter, setDisciplineFilter] = useState<'All' | Discipline>('All')
-  const [editor, setEditor] = useState<Measurement | null>(() => createSeedMeasurements()[0])
+  const [editor, setEditor] = useState<Measurement | null>(() => INITIAL_MEASUREMENTS[0])
   const [deleted, setDeleted] = useState<Measurement | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [packageName, setPackageName] = useState('Level 07 addendum A')
@@ -416,9 +424,10 @@ export function BlueprintTakeoffLab() {
     () =>
       packageMeasurements.reduce(
         (acc, measurement) => {
-          if (measurement.kind === 'linear') acc.linear += measurement.quantity
-          if (measurement.kind === 'area') acc.area += measurement.quantity
-          if (measurement.kind === 'count') acc.count += measurement.quantity
+          const withWaste = measurement.quantity * (1 + measurement.waste / 100)
+          if (measurement.kind === 'linear') acc.linear += withWaste
+          if (measurement.kind === 'area') acc.area += withWaste
+          if (measurement.kind === 'count') acc.count += withWaste
           return acc
         },
         { linear: 0, area: 0, count: 0 }
@@ -440,6 +449,12 @@ export function BlueprintTakeoffLab() {
       ),
     [measurements]
   )
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -581,6 +596,7 @@ export function BlueprintTakeoffLab() {
   const selectMeasurementAtPoint = (point: Point) => {
     const hit = [...measurements].reverse().find((measurement) => {
       if (measurement.kind === 'linear') {
+        if (measurement.points.length < 2) return false
         return distanceToSegment(point, measurement.points[0], measurement.points[1]) < 12
       }
       if (measurement.kind === 'area') return pointInPolygon(point, measurement.points)
@@ -681,17 +697,17 @@ export function BlueprintTakeoffLab() {
       return
     }
     const nextScale = pixelSpan / known
+    const nextMeasurements = measurements.map((measurement) => ({
+      ...measurement,
+      quantity: computeQuantity(measurement.kind, measurement.points, nextScale),
+    }))
     setPixelsPerFoot(nextScale)
-    setMeasurements((current) => {
-      const next = current.map((measurement) => ({
-        ...measurement,
-        quantity: computeQuantity(measurement.kind, measurement.points, nextScale),
-      }))
-      setEditor((currentEditor) =>
-        currentEditor ? next.find((measurement) => measurement.id === currentEditor.id) ?? currentEditor : null
-      )
-      return next
-    })
+    setMeasurements(nextMeasurements)
+    setEditor((currentEditor) =>
+      currentEditor
+        ? nextMeasurements.find((measurement) => measurement.id === currentEditor.id) ?? currentEditor
+        : null
+    )
     setCalibrationPoints([])
     addAudit(`Calibrated sheet to ${known.toFixed(1)} ft baseline`)
     showToast('Calibration applied')
@@ -771,19 +787,17 @@ export function BlueprintTakeoffLab() {
       showToast('Select at least one measurement')
       return
     }
-    setMeasurements((current) => {
-      const next = current.map((measurement) =>
-        submittedIds.includes(measurement.id)
-          ? { ...measurement, status: 'Needs review' as Status }
-          : measurement
-      )
-      setEditor((currentEditor) =>
-        currentEditor && submittedIds.includes(currentEditor.id)
-          ? { ...currentEditor, status: 'Needs review' }
-          : currentEditor
-      )
-      return next
-    })
+    const nextMeasurements = measurements.map((measurement) =>
+      submittedIds.includes(measurement.id)
+        ? { ...measurement, status: 'Needs review' as Status }
+        : measurement
+    )
+    setMeasurements(nextMeasurements)
+    setEditor((currentEditor) =>
+      currentEditor && submittedIds.includes(currentEditor.id)
+        ? { ...currentEditor, status: 'Needs review' }
+        : currentEditor
+    )
     setPackageMeasurementIds(submittedIds)
     setPackageState('Submitted')
     addAudit(`Submitted ${packageName} to ${reviewer}`)
@@ -796,19 +810,17 @@ export function BlueprintTakeoffLab() {
       showToast('Submitted package has no measurements')
       return
     }
-    setMeasurements((current) => {
-      const next = current.map((measurement) =>
-        releaseIds.includes(measurement.id)
-          ? { ...measurement, status: 'Approved' as Status }
-          : measurement
-      )
-      setEditor((currentEditor) =>
-        currentEditor && releaseIds.includes(currentEditor.id)
-          ? { ...currentEditor, status: 'Approved' }
-          : currentEditor
-      )
-      return next
-    })
+    const nextMeasurements = measurements.map((measurement) =>
+      releaseIds.includes(measurement.id)
+        ? { ...measurement, status: 'Approved' as Status }
+        : measurement
+    )
+    setMeasurements(nextMeasurements)
+    setEditor((currentEditor) =>
+      currentEditor && releaseIds.includes(currentEditor.id)
+        ? { ...currentEditor, status: 'Approved' }
+        : currentEditor
+    )
     setPackageState('Released')
     addAudit(`Released ${packageName}`)
     showToast('Package released')
