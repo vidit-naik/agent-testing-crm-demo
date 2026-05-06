@@ -48,6 +48,12 @@ type Measurement = {
   note: string
 }
 
+type PlanPreview = {
+  kind: 'sample' | 'pdf' | 'image'
+  imageUrl?: string
+  variant: number
+}
+
 const CANVAS_WIDTH = 1040
 const CANVAS_HEIGHT = 640
 const DEFAULT_PIXELS_PER_FOOT = 4
@@ -125,18 +131,24 @@ function unitFor(kind: Kind): Measurement['unit'] {
 }
 
 function computeQuantity(kind: Kind, points: Point[], pixelsPerFoot: number) {
+  if (pixelsPerFoot <= 0) return 0
   if (kind === 'linear') return points.length >= 2 ? distance(points[0], points[1]) / pixelsPerFoot : 0
   if (kind === 'area') return polygonArea(points) / pixelsPerFoot ** 2
   return points.length
 }
 
 function formatQuantity(value: number, unit: Measurement['unit']) {
+  if (!Number.isFinite(value)) return `0 ${unit}`
   const formatted = unit === 'ea' ? Math.round(value).toString() : value.toFixed(1)
   return `${formatted} ${unit}`
 }
 
 function createMeasurementId() {
   return `takeoff-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+}
+
+function planVariantFromName(name: string) {
+  return Array.from(name).reduce((acc, char) => acc + char.charCodeAt(0), 0) % 7
 }
 
 function createSeedMeasurements(): Measurement[] {
@@ -198,7 +210,12 @@ function createSeedMeasurements(): Measurement[] {
   }))
 }
 
-function drawBlueprint(ctx: CanvasRenderingContext2D, planName: string) {
+function drawBlueprint(
+  ctx: CanvasRenderingContext2D,
+  planName: string,
+  preview: Pick<PlanPreview, 'kind' | 'variant'>,
+  image?: HTMLImageElement
+) {
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
   ctx.fillStyle = '#f8fafc'
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
@@ -218,36 +235,60 @@ function drawBlueprint(ctx: CanvasRenderingContext2D, planName: string) {
     ctx.stroke()
   }
 
+  if (image) {
+    const imageRatio = image.width / image.height
+    const canvasRatio = CANVAS_WIDTH / CANVAS_HEIGHT
+    const width = imageRatio > canvasRatio ? CANVAS_WIDTH - 96 : (CANVAS_HEIGHT - 96) * imageRatio
+    const height = imageRatio > canvasRatio ? (CANVAS_WIDTH - 96) / imageRatio : CANVAS_HEIGHT - 96
+    const x = (CANVAS_WIDTH - width) / 2
+    const y = (CANVAS_HEIGHT - height) / 2
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(x - 16, y - 16, width + 32, height + 32)
+    ctx.drawImage(image, x, y, width, height)
+    ctx.strokeStyle = '#1e293b'
+    ctx.lineWidth = 3
+    ctx.strokeRect(x - 16, y - 16, width + 32, height + 32)
+    ctx.fillStyle = '#0f172a'
+    ctx.font = '600 16px sans-serif'
+    ctx.fillText('Uploaded image plan', 48, 48)
+    ctx.font = '12px sans-serif'
+    ctx.fillText(planName, 48, 70)
+    ctx.fillText('Raster preview', 900, 602)
+    return
+  }
+
+  const offset = preview.kind === 'pdf' ? preview.variant * 7 : 0
+
   ctx.strokeStyle = '#1e293b'
   ctx.lineWidth = 5
-  ctx.strokeRect(136, 112, 792, 420)
+  ctx.strokeRect(136 + offset, 112, 792 - offset * 2, 420)
   ctx.lineWidth = 3
-  ctx.strokeRect(180, 152, 330, 312)
-  ctx.strokeRect(540, 152, 348, 312)
-  ctx.strokeRect(360, 208, 144, 132)
-  ctx.strokeRect(150, 484, 738, 36)
+  ctx.strokeRect(180 + offset, 152, 330 - offset, 312)
+  ctx.strokeRect(540, 152 + offset, 348 - offset, 312 - offset)
+  ctx.strokeRect(360 + offset, 208, 144, 132)
+  ctx.strokeRect(150 + offset, 484, 738 - offset * 2, 36)
 
   ctx.strokeStyle = '#64748b'
   ctx.lineWidth = 2
   ctx.setLineDash([10, 8])
   ctx.beginPath()
-  ctx.moveTo(520, 152)
-  ctx.lineTo(520, 464)
-  ctx.moveTo(180, 248)
+  ctx.moveTo(520 + offset / 2, 152)
+  ctx.lineTo(520 + offset / 2, 464)
+  ctx.moveTo(180 + offset, 248)
   ctx.lineTo(510, 248)
-  ctx.moveTo(540, 292)
-  ctx.lineTo(888, 292)
+  ctx.moveTo(540, 292 + offset)
+  ctx.lineTo(888 - offset, 292 + offset)
   ctx.stroke()
   ctx.setLineDash([])
 
   ctx.fillStyle = '#e0f2fe'
-  ctx.fillRect(382, 224, 96, 96)
+  ctx.fillRect(382 + offset, 224, 96, 96)
   ctx.fillStyle = '#cbd5e1'
-  ctx.fillRect(166, 492, 708, 20)
+  ctx.fillRect(166 + offset, 492, 708 - offset * 2, 20)
 
   ctx.fillStyle = '#0f172a'
   ctx.font = '600 16px sans-serif'
-  ctx.fillText('Level 07 plan sheet', 48, 48)
+  ctx.fillText(preview.kind === 'pdf' ? 'Imported PDF plan preview' : 'Level 07 plan sheet', 48, 48)
   ctx.font = '12px sans-serif'
   ctx.fillText(planName, 48, 70)
   ctx.fillText('A-207', 926, 602)
@@ -310,6 +351,7 @@ export function BlueprintTakeoffLab() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const toastTimerRef = useRef<number | null>(null)
   const [planName, setPlanName] = useState('Riverside tower level 07.pdf')
+  const [planPreview, setPlanPreview] = useState<PlanPreview>({ kind: 'sample', variant: 0 })
   const [uploaded, setUploaded] = useState(false)
   const [tool, setTool] = useState<Tool>('select')
   const [pixelsPerFoot, setPixelsPerFoot] = useState(DEFAULT_PIXELS_PER_FOOT)
@@ -333,6 +375,7 @@ export function BlueprintTakeoffLab() {
   const [reviewer, setReviewer] = useState('Nina Patel')
   const [dueDate, setDueDate] = useState('2026-05-22')
   const [packageState, setPackageState] = useState<'Draft' | 'Submitted' | 'Released'>('Draft')
+  const [packageMeasurementIds, setPackageMeasurementIds] = useState<string[]>([])
   const [audit, setAudit] = useState<string[]>([
     'Imported Riverside tower level 07.pdf',
     'Seeded 3 existing takeoffs from estimate history',
@@ -363,9 +406,15 @@ export function BlueprintTakeoffLab() {
     [measurements, selectedIds]
   )
 
+  const packageIds = packageState === 'Draft' ? selectedIds : packageMeasurementIds
+  const packageMeasurements = useMemo(
+    () => measurements.filter((measurement) => packageIds.includes(measurement.id)),
+    [measurements, packageIds]
+  )
+
   const selectedPackageTotals = useMemo(
     () =>
-      selectedMeasurements.reduce(
+      packageMeasurements.reduce(
         (acc, measurement) => {
           if (measurement.kind === 'linear') acc.linear += measurement.quantity
           if (measurement.kind === 'area') acc.area += measurement.quantity
@@ -374,7 +423,7 @@ export function BlueprintTakeoffLab() {
         },
         { linear: 0, area: 0, count: 0 }
       ),
-    [selectedMeasurements]
+    [packageMeasurements]
   )
 
   const totals = useMemo(
@@ -393,70 +442,94 @@ export function BlueprintTakeoffLab() {
   )
 
   useEffect(() => {
+    return () => {
+      if (planPreview.imageUrl) URL.revokeObjectURL(planPreview.imageUrl)
+    }
+  }, [planPreview.imageUrl])
+
+  useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    drawBlueprint(ctx, planName)
-    measurements.forEach((measurement) =>
-      strokeMeasurement(ctx, measurement, measurement.id === selectedId)
-    )
+    let cancelled = false
 
-    if (calibrationPoints.length > 0) {
-      ctx.save()
-      ctx.strokeStyle = '#f97316'
-      ctx.fillStyle = '#f97316'
-      ctx.lineWidth = 4
-      ctx.setLineDash([8, 6])
-      ctx.beginPath()
-      calibrationPoints.forEach((point, index) => {
-        if (index === 0) ctx.moveTo(point.x, point.y)
-        else ctx.lineTo(point.x, point.y)
-      })
-      ctx.stroke()
-      ctx.setLineDash([])
-      calibrationPoints.forEach((point) => {
+    const drawScene = (image?: HTMLImageElement) => {
+      if (cancelled) return
+      drawBlueprint(ctx, planName, planPreview, image)
+      measurements.forEach((measurement) =>
+        strokeMeasurement(ctx, measurement, measurement.id === selectedId)
+      )
+
+      if (calibrationPoints.length > 0) {
+        ctx.save()
+        ctx.strokeStyle = '#f97316'
+        ctx.fillStyle = '#f97316'
+        ctx.lineWidth = 4
+        ctx.setLineDash([8, 6])
         ctx.beginPath()
-        ctx.arc(point.x, point.y, 7, 0, Math.PI * 2)
-        ctx.fill()
-      })
-      ctx.restore()
-    }
+        calibrationPoints.forEach((point, index) => {
+          if (index === 0) ctx.moveTo(point.x, point.y)
+          else ctx.lineTo(point.x, point.y)
+        })
+        ctx.stroke()
+        ctx.setLineDash([])
+        calibrationPoints.forEach((point) => {
+          ctx.beginPath()
+          ctx.arc(point.x, point.y, 7, 0, Math.PI * 2)
+          ctx.fill()
+        })
+        ctx.restore()
+      }
 
-    if (lineDraft) {
-      ctx.save()
-      ctx.strokeStyle = KIND_COLOR.linear
-      ctx.lineWidth = 3
-      ctx.setLineDash([6, 6])
-      ctx.beginPath()
-      ctx.moveTo(lineDraft.start.x, lineDraft.start.y)
-      ctx.lineTo(lineDraft.end.x, lineDraft.end.y)
-      ctx.stroke()
-      ctx.restore()
-    }
-
-    if (areaDraft.length > 0) {
-      ctx.save()
-      ctx.strokeStyle = KIND_COLOR.area
-      ctx.fillStyle = KIND_COLOR.area
-      ctx.lineWidth = 3
-      ctx.setLineDash([6, 6])
-      ctx.beginPath()
-      areaDraft.forEach((point, index) => {
-        if (index === 0) ctx.moveTo(point.x, point.y)
-        else ctx.lineTo(point.x, point.y)
-      })
-      ctx.stroke()
-      ctx.setLineDash([])
-      areaDraft.forEach((point) => {
+      if (lineDraft) {
+        ctx.save()
+        ctx.strokeStyle = KIND_COLOR.linear
+        ctx.lineWidth = 3
+        ctx.setLineDash([6, 6])
         ctx.beginPath()
-        ctx.arc(point.x, point.y, 6, 0, Math.PI * 2)
-        ctx.fill()
-      })
-      ctx.restore()
+        ctx.moveTo(lineDraft.start.x, lineDraft.start.y)
+        ctx.lineTo(lineDraft.end.x, lineDraft.end.y)
+        ctx.stroke()
+        ctx.restore()
+      }
+
+      if (areaDraft.length > 0) {
+        ctx.save()
+        ctx.strokeStyle = KIND_COLOR.area
+        ctx.fillStyle = KIND_COLOR.area
+        ctx.lineWidth = 3
+        ctx.setLineDash([6, 6])
+        ctx.beginPath()
+        areaDraft.forEach((point, index) => {
+          if (index === 0) ctx.moveTo(point.x, point.y)
+          else ctx.lineTo(point.x, point.y)
+        })
+        ctx.stroke()
+        ctx.setLineDash([])
+        areaDraft.forEach((point) => {
+          ctx.beginPath()
+          ctx.arc(point.x, point.y, 6, 0, Math.PI * 2)
+          ctx.fill()
+        })
+        ctx.restore()
+      }
     }
-  }, [areaDraft, calibrationPoints, lineDraft, measurements, planName, selectedId])
+
+    if (planPreview.kind === 'image' && planPreview.imageUrl) {
+      const image = new Image()
+      image.onload = () => drawScene(image)
+      image.onerror = () => drawScene()
+      image.src = planPreview.imageUrl
+    } else {
+      drawScene()
+    }
+
+    return () => {
+      cancelled = true
+    }
+  }, [areaDraft, calibrationPoints, lineDraft, measurements, planName, planPreview, selectedId])
 
   const addAudit = (message: string) => {
     setAudit((current) => [message, ...current].slice(0, 8))
@@ -566,16 +639,28 @@ export function BlueprintTakeoffLab() {
     const file = event.target.files?.[0]
     if (!file) return
     setPlanName(file.name)
+    if (file.type.startsWith('image/')) {
+      setPlanPreview({
+        kind: 'image',
+        imageUrl: URL.createObjectURL(file),
+        variant: planVariantFromName(file.name),
+      })
+    } else {
+      setPlanPreview({ kind: 'pdf', variant: planVariantFromName(file.name) })
+    }
     setUploaded(true)
     setPackageState('Draft')
-    addAudit(`Uploaded ${file.name}`)
+    setPackageMeasurementIds([])
+    addAudit(`Uploaded and rendered ${file.name}`)
     showToast(`${file.name} imported`)
   }
 
   const loadSamplePlan = () => {
     setPlanName('North hospital expansion - sheet A2.13.pdf')
+    setPlanPreview({ kind: 'sample', variant: 2 })
     setUploaded(true)
     setPackageState('Draft')
+    setPackageMeasurementIds([])
     addAudit('Loaded sample plan sheet A2.13')
     showToast('Sample plan loaded')
   }
@@ -590,7 +675,12 @@ export function BlueprintTakeoffLab() {
       showToast('Enter a positive known length')
       return
     }
-    const nextScale = distance(calibrationPoints[0], calibrationPoints[1]) / known
+    const pixelSpan = distance(calibrationPoints[0], calibrationPoints[1])
+    if (pixelSpan < 8) {
+      showToast('Calibration span is too short')
+      return
+    }
+    const nextScale = pixelSpan / known
     setPixelsPerFoot(nextScale)
     setMeasurements((current) => {
       const next = current.map((measurement) => ({
@@ -673,37 +763,47 @@ export function BlueprintTakeoffLab() {
   }
 
   const submitPackage = () => {
-    if (selectedMeasurements.length === 0) {
+    const submittedIds = [...selectedIds]
+    const submittedMeasurements = measurements.filter((measurement) =>
+      submittedIds.includes(measurement.id)
+    )
+    if (submittedMeasurements.length === 0) {
       showToast('Select at least one measurement')
       return
     }
     setMeasurements((current) => {
       const next = current.map((measurement) =>
-        selectedIds.includes(measurement.id)
+        submittedIds.includes(measurement.id)
           ? { ...measurement, status: 'Needs review' as Status }
           : measurement
       )
       setEditor((currentEditor) =>
-        currentEditor && selectedIds.includes(currentEditor.id)
+        currentEditor && submittedIds.includes(currentEditor.id)
           ? { ...currentEditor, status: 'Needs review' }
           : currentEditor
       )
       return next
     })
+    setPackageMeasurementIds(submittedIds)
     setPackageState('Submitted')
     addAudit(`Submitted ${packageName} to ${reviewer}`)
     showToast('Package submitted')
   }
 
   const releasePackage = () => {
+    const releaseIds = [...packageMeasurementIds]
+    if (releaseIds.length === 0) {
+      showToast('Submitted package has no measurements')
+      return
+    }
     setMeasurements((current) => {
       const next = current.map((measurement) =>
-        selectedIds.includes(measurement.id)
+        releaseIds.includes(measurement.id)
           ? { ...measurement, status: 'Approved' as Status }
           : measurement
       )
       setEditor((currentEditor) =>
-        currentEditor && selectedIds.includes(currentEditor.id)
+        currentEditor && releaseIds.includes(currentEditor.id)
           ? { ...currentEditor, status: 'Approved' }
           : currentEditor
       )
@@ -1180,7 +1280,8 @@ export function BlueprintTakeoffLab() {
               <div>
                 <h2 className="font-semibold">Estimate package</h2>
                 <p className="text-xs text-muted-foreground">
-                  {selectedMeasurements.length} measurements selected
+                  {packageMeasurements.length}{' '}
+                  {packageState === 'Draft' ? 'measurements selected' : 'measurements in package'}
                 </p>
               </div>
               <span
@@ -1251,7 +1352,7 @@ export function BlueprintTakeoffLab() {
                   type="button"
                   className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
                   onClick={submitPackage}
-                  disabled={selectedMeasurements.length === 0 || packageState === 'Released'}
+                  disabled={selectedMeasurements.length === 0 || packageState !== 'Draft'}
                 >
                   <PackageCheck className="h-4 w-4" />
                   Submit
@@ -1260,7 +1361,7 @@ export function BlueprintTakeoffLab() {
                   type="button"
                   className="inline-flex h-9 items-center justify-center gap-2 rounded-md border px-3 text-sm font-medium hover:bg-accent disabled:opacity-40"
                   onClick={releasePackage}
-                  disabled={packageState !== 'Submitted'}
+                  disabled={packageState !== 'Submitted' || packageMeasurementIds.length === 0}
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   Release
