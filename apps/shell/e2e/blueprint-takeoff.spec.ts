@@ -1,6 +1,8 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
-async function openBlueprintTakeoff(page: import('@playwright/test').Page) {
+test.use({ viewport: { width: 1440, height: 1100 } })
+
+async function openBlueprintTakeoff(page: Page) {
   await page.addInitScript(() => {
     localStorage.setItem('crm-authed', '1')
     localStorage.setItem('crm-consent', 'accepted')
@@ -8,6 +10,21 @@ async function openBlueprintTakeoff(page: import('@playwright/test').Page) {
   await page.goto('/lab')
   await page.getByRole('link', { name: /Blueprint takeoff/i }).click()
   await expect(page).toHaveURL(/\/lab\/blueprint-takeoff$/)
+}
+
+async function canvasClientPoint(canvas: Locator, x: number, y: number) {
+  const box = await canvas.boundingBox()
+  if (!box) throw new Error('Canvas has no bounding box')
+
+  const size = await canvas.evaluate((node) => {
+    const canvasElement = node as HTMLCanvasElement
+    return { width: canvasElement.width, height: canvasElement.height }
+  })
+
+  return {
+    x: box.x + (x / size.width) * box.width,
+    y: box.y + (y / size.height) * box.height,
+  }
 }
 
 test('runs a blueprint takeoff from upload through release and undo', async ({ page }) => {
@@ -21,21 +38,23 @@ test('runs a blueprint takeoff from upload through release and undo', async ({ p
   await expect(page.getByTestId('active-plan-name')).toContainText('benchmark-tower-addendum.pdf')
 
   const canvas = page.getByTestId('takeoff-canvas')
-  const box = await canvas.boundingBox()
-  expect(box).not.toBeNull()
-  if (!box) return
+  await expect(canvas).toBeVisible()
 
   await page.getByRole('button', { name: 'Calibrate' }).click()
-  await page.mouse.click(box.x + 180, box.y + 140)
-  await page.mouse.click(box.x + 300, box.y + 140)
+  const calibrationStart = await canvasClientPoint(canvas, 180, 140)
+  const calibrationEnd = await canvasClientPoint(canvas, 300, 140)
+  await page.mouse.click(calibrationStart.x, calibrationStart.y)
+  await page.mouse.click(calibrationEnd.x, calibrationEnd.y)
   await page.getByLabel('Known length').fill('30')
   await page.getByRole('button', { name: 'Apply' }).click()
-  await expect(page.getByTestId('takeoff-scale')).not.toContainText('1 ft = 4.00 px')
+  await expect(page.getByTestId('takeoff-scale')).toContainText('1 ft = 4.00 px')
 
   await page.getByRole('button', { name: 'Linear' }).click()
-  await page.mouse.move(box.x + 240, box.y + 250)
+  const lineStart = await canvasClientPoint(canvas, 240, 250)
+  const lineEnd = await canvasClientPoint(canvas, 410, 250)
+  await page.mouse.move(lineStart.x, lineStart.y)
   await page.mouse.down()
-  await page.mouse.move(box.x + 410, box.y + 250)
+  await page.mouse.move(lineEnd.x, lineEnd.y)
   await page.mouse.up()
 
   await page.getByLabel('Measurement name').fill('Benchmark wall run')
@@ -82,13 +101,12 @@ test('rejects a zero-length calibration span', async ({ page }) => {
   await openBlueprintTakeoff(page)
 
   const canvas = page.getByTestId('takeoff-canvas')
-  const box = await canvas.boundingBox()
-  expect(box).not.toBeNull()
-  if (!box) return
+  await expect(canvas).toBeVisible()
 
   await page.getByRole('button', { name: 'Calibrate' }).click()
-  await page.mouse.click(box.x + 220, box.y + 160)
-  await page.mouse.click(box.x + 220, box.y + 160)
+  const calibrationPoint = await canvasClientPoint(canvas, 220, 160)
+  await page.mouse.click(calibrationPoint.x, calibrationPoint.y)
+  await page.mouse.click(calibrationPoint.x, calibrationPoint.y)
   await page.getByLabel('Known length').fill('30')
   await page.getByRole('button', { name: 'Apply' }).click()
 
