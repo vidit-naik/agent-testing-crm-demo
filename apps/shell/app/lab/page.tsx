@@ -17,6 +17,9 @@ import {
   Upload,
   Megaphone,
   Ruler,
+  Briefcase,
+  LayoutGrid,
+  Columns,
 } from 'lucide-react'
 
 type Entry = {
@@ -77,6 +80,27 @@ const SECTIONS: { heading: string; entries: Entry[] }[] = [
         desc: 'Design, validate, and publish lead routing automations.',
         icon: Workflow,
         tag: 'Builder',
+      },
+      {
+        href: '/lab/deal-room',
+        title: 'Deal room',
+        desc: 'Multi-tab deal lifecycle with approval workflows, stakeholder management, and cross-tab validation.',
+        icon: Briefcase,
+        tag: 'Complex',
+      },
+      {
+        href: '/lab/data-grid',
+        title: 'Analytics grid',
+        desc: '5,000-row virtualized data grid with inline editing, multi-column sort, and bulk operations.',
+        icon: LayoutGrid,
+        tag: 'Grid',
+      },
+      {
+        href: '/lab/pipeline',
+        title: 'Revenue pipeline',
+        desc: 'Kanban board with drag-and-drop stage gates, weighted forecasting, and deal management.',
+        icon: Columns,
+        tag: 'Kanban',
       },
     ],
   },
