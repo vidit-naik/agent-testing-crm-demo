@@ -1218,7 +1218,7 @@ export default function DealRoomLab() {
                   </div>
                 </div>
               )}
-            </>
+            </div>
           )}
 
           {state.approvalStatus === 'approved' && (

@@ -179,7 +179,7 @@ interface PipelineState {
   newDealOpen: boolean
   // BUG: forecast state is derived from deals but cached separately,
   // and moving a card BACK from closed_won doesn't update this cache
-  forecastCache: Record<StageId, number>
+  forecastCache: Partial<Record<StageId, number>>
 }
 
 type PipelineAction =
