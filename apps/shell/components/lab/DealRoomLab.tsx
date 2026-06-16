@@ -120,7 +120,7 @@ const INITIAL_STATE: DealState = {
   customField3: '',
   stakeholders: [],
   lineItems: [
-    { id: 'li-1', product: 'Enterprise License', quantity: 1, unitPrice: 50000, discount: 0 },
+    { id: 'li-1', product: 'enterprise', quantity: 1, unitPrice: 50000, discount: 0 },
   ],
   documents: [],
   notes: [],

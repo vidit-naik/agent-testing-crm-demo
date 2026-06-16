@@ -33,23 +33,10 @@
 
 <script>
 // Custom primitive: VSelect (drop-in, no a11y id)
+// Uses a render function instead of a template string so that the Vue 2
+// runtime-only build (no compiler) can execute it correctly.
 const VSelect = {
   props: ['value', 'options'],
-  template: `
-    <div class="v-select" :class="{ open: open }">
-      <button type="button" class="v-select-trigger" @click="open = !open">
-        {{ selectedLabel || 'Select' }}
-      </button>
-      <ul v-show="open" class="v-select-menu">
-        <li v-for="opt in options"
-            :key="opt.value"
-            class="v-select-item"
-            @click="choose(opt)">
-          {{ opt.label }}
-        </li>
-      </ul>
-    </div>
-  `,
   data() { return { open: false } },
   computed: {
     selectedLabel() {
@@ -63,18 +50,33 @@ const VSelect = {
       this.open = false
     },
   },
+  render(h) {
+    const self = this
+    return h('div', { class: ['v-select', { open: self.open }] }, [
+      h('button', {
+        class: 'v-select-trigger',
+        attrs: { type: 'button' },
+        on: { click() { self.open = !self.open } },
+      }, [self.selectedLabel || 'Select']),
+      self.open
+        ? h('ul', { class: 'v-select-menu' },
+            self.options.map(opt =>
+              h('li', {
+                key: opt.value,
+                class: 'v-select-item',
+                on: { click() { self.choose(opt) } },
+              }, [opt.label])
+            )
+          )
+        : null,
+    ])
+  },
 }
 
 // Custom primitive: VInputNumber with +/- steppers
+// Uses a render function instead of a template string for the same reason.
 const VInputNumber = {
   props: ['value', 'min', 'max'],
-  template: `
-    <div class="v-input-number">
-      <button type="button" class="v-input-number-step" @click="dec">-</button>
-      <input type="number" :value="value" @input="onInput" />
-      <button type="button" class="v-input-number-step" @click="inc">+</button>
-    </div>
-  `,
   methods: {
     onInput(e) {
       const v = Number(e.target.value)
@@ -83,6 +85,25 @@ const VInputNumber = {
     },
     inc() { this.$emit('input', Math.min(this.max ?? (this.value + 1), this.value + 1)) },
     dec() { this.$emit('input', Math.max(this.min ?? 0, this.value - 1)) },
+  },
+  render(h) {
+    const self = this
+    return h('div', { class: 'v-input-number' }, [
+      h('button', {
+        class: 'v-input-number-step',
+        attrs: { type: 'button' },
+        on: { click: self.dec },
+      }, ['-']),
+      h('input', {
+        attrs: { type: 'number', value: self.value },
+        on: { input: self.onInput },
+      }),
+      h('button', {
+        class: 'v-input-number-step',
+        attrs: { type: 'button' },
+        on: { click: self.inc },
+      }, ['+']),
+    ])
   },
 }
 
