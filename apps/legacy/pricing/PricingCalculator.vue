@@ -93,7 +93,7 @@ const VInputNumber = {
         on: { click() { self.dec() } },
       }, ['-']),
       h('input', {
-        attrs: { type: 'number', value: self.value },
+        domProps: { type: 'number', value: self.value },
         on: { input(e) { self.onInput(e) } },
       }),
       h('button', {
